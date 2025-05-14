@@ -46,6 +46,21 @@ export const games: Game[] = [
     isAvailable: true
   },
   {
+    id: "nim",
+    name: "Nim",
+    description: "Strategic pile game - remove objects to win!",
+    icon: "layers",
+    component: () => import("../games/NimGame").then(module => ({ default: module.default })),
+    availableDifficulties: [
+      GameDifficulty.EASY,
+      GameDifficulty.MEDIUM,
+      GameDifficulty.HARD
+    ],
+    supportsMultiplayer: true,
+    category: "strategy",
+    isAvailable: true
+  },
+  {
     id: "sudoku",
     name: "Sudoku",
     description: "Fill the grid with numbers. Each row, column, and 3x3 box must contain numbers 1-9.",

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,6 +18,7 @@ const Game2048: React.FC = () => {
   const [gameOver, setGameOver] = useState(false);
   const [hasChanged, setHasChanged] = useState(false);
   const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  const [showInstructions, setShowInstructions] = useState(false);
   
   // Initialize game
   const initializeGame = () => {
@@ -453,7 +453,12 @@ const Game2048: React.FC = () => {
               <div className="font-bold">{bestScore}</div>
             </div>
           </div>
-          <Button onClick={initializeGame} size="sm">New Game</Button>
+          <div className="flex gap-2">
+            <Button onClick={initializeGame} size="sm" variant="outline">Restart</Button>
+            <Button onClick={() => setShowInstructions(!showInstructions)} size="sm" variant="outline">
+              Help
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -490,41 +495,21 @@ const Game2048: React.FC = () => {
         </div>
       )}
       
-      <div className="mt-4 flex justify-center">
-        <div className="bg-muted/40 p-4 rounded-md text-center text-sm">
-          <p className="font-medium mb-2">How to Play 2048:</p>
-          <div className="text-left space-y-3">
-            <div>
-              <p className="font-medium">1. Goal:</p>
-              <p>Merge tiles with the same number to reach the 2048 tile.</p>
-            </div>
-            
-            <div>
-              <p className="font-medium">2. Controls (Mobile):</p>
-              <p>Swipe up, down, left, or right to move the tiles.</p>
-              <p>When two tiles with the same number touch, they merge into one with their combined value.</p>
-            </div>
-            
-            <div>
-              <p className="font-medium">3. Game Progression:</p>
-              <p>After every swipe, a new tile (2 or 4) appears randomly.</p>
-              <p>Merged tiles combine only once per move.</p>
-              <p>The game ends if no valid moves are left.</p>
-            </div>
-            
-            <div>
-              <p className="font-medium">4. Winning:</p>
-              <p>Reach the 2048 tile to win the game. Continue playing for a higher score if desired.</p>
-            </div>
-            
-            <div>
-              <p className="font-medium">5. Tips:</p>
-              <p>Keep your highest tile in a corner.</p>
-              <p>Think ahead before swiping to avoid blocking merges.</p>
-            </div>
+      {showInstructions && (
+        <div className="mt-4 bg-muted/40 p-4 rounded-md text-center text-sm">
+          <div className="flex justify-between items-center mb-2">
+            <p className="font-medium">How to Play 2048:</p>
+            <Button size="sm" variant="ghost" onClick={() => setShowInstructions(false)}>Close</Button>
+          </div>
+          <div className="text-left space-y-2">
+            <p><span className="font-medium">Goal:</span> Merge tiles with the same number to reach the 2048 tile.</p>
+            <p><span className="font-medium">Controls:</span> Swipe in any direction to move tiles.</p>
+            <p><span className="font-medium">Progression:</span> A new tile (2 or 4) appears after each move.</p>
+            <p><span className="font-medium">Winning:</span> Reach 2048 to win. Keep playing for high scores.</p>
+            <p><span className="font-medium">Tips:</span> Keep your highest tile in a corner. Think ahead before swiping.</p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

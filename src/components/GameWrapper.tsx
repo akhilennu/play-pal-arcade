@@ -13,7 +13,7 @@ import NavBar from '@/components/NavBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Users } from 'lucide-react';
+import { ArrowLeft, User, Users, Volume2, VolumeX, RefreshCw } from 'lucide-react';
 import { getGameById } from '@/data/gamesData';
 import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty } from '@/types';
@@ -23,6 +23,7 @@ import GameLoading from './GameLoading';
 const TicTacToe = lazy(() => import('@/games/TicTacToe'));
 const MemoryMatch = lazy(() => import('@/games/MemoryMatch'));
 const Game2048 = lazy(() => import('@/games/Game2048'));
+const NimGame = lazy(() => import('@/games/NimGame'));
 const ComingSoon = lazy(() => import('@/components/ComingSoon'));
 
 const GameLoader: React.FC<{ gameId: string }> = ({ gameId }) => {
@@ -33,6 +34,8 @@ const GameLoader: React.FC<{ gameId: string }> = ({ gameId }) => {
       return <MemoryMatch />;
     case 'game2048':
       return <Game2048 />;
+    case 'nim':
+      return <NimGame />;
     default:
       return <ComingSoon />;
   }
@@ -51,6 +54,17 @@ const GameWrapper: React.FC = () => {
   const [isMultiplayer, setIsMultiplayer] = React.useState<boolean>(
     state.gameSettings.isMultiplayer
   );
+  
+  // Sound toggle
+  const toggleSound = () => {
+    dispatch({ type: "TOGGLE_SOUND", payload: !state.soundEnabled });
+  };
+  
+  // Restart game function - to be connected to individual games
+  const restartGame = () => {
+    // This will be handled by individual game components
+    // We could implement an event-based system later
+  };
   
   if (!game) {
     return (
@@ -154,6 +168,25 @@ const GameWrapper: React.FC = () => {
                     </Select>
                   </div>
                 )}
+
+                {/* Sound Toggle */}
+                <div className="mb-4">
+                  <label className="text-sm font-medium mb-1 block">
+                    Sound Effects
+                  </label>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start"
+                    onClick={toggleSound}
+                  >
+                    {state.soundEnabled ? (
+                      <><Volume2 className="mr-2 h-4 w-4" /> Enabled</>
+                    ) : (
+                      <><VolumeX className="mr-2 h-4 w-4" /> Disabled</>
+                    )}
+                  </Button>
+                </div>
                 
                 <Separator className="my-4" />
                 

@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import NavBar from "@/components/NavBar";
 import GameCard from "@/components/GameCard";
-import { games } from "@/data/gamesData";
+import { games, getAvailableGames } from "@/data/gamesData";
 import { useGameContext } from "@/contexts/GameContext";
 import { createNewProfile } from "@/utils/userUtils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -35,11 +35,25 @@ const Index: React.FC = () => {
   const [nameInput, setNameInput] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState(0);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [filter, setFilter] = useState<"all" | "available" | "multiplayer">("available");
 
+  // Get available games
+  const availableGames = getAvailableGames();
+  const multiplayerGames = games.filter(game => game.supportsMultiplayer);
+  
   // Filter games by category
-  const puzzleGames = games.filter(game => game.category === "puzzle");
-  const classicGames = games.filter(game => game.category === "classic");
-  const casualGames = games.filter(game => game.category === "casual");
+  const getFilteredGamesByCategory = (category: string) => {
+    const gamesToFilter = filter === "all" ? games : 
+                         filter === "available" ? availableGames : 
+                         multiplayerGames;
+    
+    return gamesToFilter.filter(game => game.category === category);
+  };
+  
+  const puzzleGames = getFilteredGamesByCategory("puzzle");
+  const classicGames = getFilteredGamesByCategory("classic");
+  const casualGames = getFilteredGamesByCategory("casual");
+  const strategyGames = getFilteredGamesByCategory("strategy");
   
   // Handle profile creation
   const handleCreateProfile = () => {
@@ -141,14 +155,18 @@ const Index: React.FC = () => {
           </div>
           
           <div className="w-[180px]">
-            <Select defaultValue="all">
+            <Select 
+              defaultValue="available" 
+              value={filter}
+              onValueChange={(value) => setFilter(value as "all" | "available" | "multiplayer")}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Filter Games" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Games</SelectItem>
+                <SelectItem value="available">Available Only</SelectItem>
                 <SelectItem value="multiplayer">Multiplayer</SelectItem>
-                <SelectItem value="singleplayer">Single Player</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -156,9 +174,10 @@ const Index: React.FC = () => {
         
         <Tabs defaultValue="all" className="animate-fade-in">
           <TabsList className="mb-6">
-            <TabsTrigger value="all">All Games</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="puzzle">Puzzle</TabsTrigger>
             <TabsTrigger value="classic">Classic</TabsTrigger>
+            <TabsTrigger value="strategy">Strategy</TabsTrigger>
             <TabsTrigger value="casual">Casual</TabsTrigger>
           </TabsList>
           
@@ -167,7 +186,9 @@ const Index: React.FC = () => {
               <div className={viewMode === "grid" ? 
                 "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : 
                 "flex flex-col gap-4"}>
-                {games.map(game => (
+                {(filter === "all" ? games : 
+                  filter === "available" ? availableGames : 
+                  multiplayerGames).map(game => (
                   <GameCard key={game.id} game={game} />
                 ))}
               </div>
@@ -188,6 +209,16 @@ const Index: React.FC = () => {
                 "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : 
                 "flex flex-col gap-4"}>
                 {classicGames.map(game => (
+                  <GameCard key={game.id} game={game} />
+                ))}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="strategy" className="mt-0">
+              <div className={viewMode === "grid" ? 
+                "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : 
+                "flex flex-col gap-4"}>
+                {strategyGames.map(game => (
                   <GameCard key={game.id} game={game} />
                 ))}
               </div>

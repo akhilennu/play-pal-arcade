@@ -1,4 +1,3 @@
-
 // Game Interfaces
 export enum GameDifficulty {
   EASY = "easy",
@@ -15,6 +14,7 @@ export interface Game {
   availableDifficulties: GameDifficulty[];
   supportsMultiplayer: boolean;
   category: "puzzle" | "strategy" | "classic" | "casual";
+  isAvailable: boolean; // Added this property
 }
 
 export interface UserProfile {

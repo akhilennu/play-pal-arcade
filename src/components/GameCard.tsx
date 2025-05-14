@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,7 +19,7 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
   const isMobile = useIsMobile();
   
   const handlePlayClick = () => {
-    if (game.id.startsWith('comingsoon') || !game.isAvailable) {
+    if (!game.isAvailable) {
       toast({
         title: "Coming Soon!",
         description: "This game is currently in development and will be available soon.",
@@ -41,7 +40,7 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
     }
   };
   
-  const isComingSoon = game.id.startsWith('comingsoon') || !game.isAvailable;
+  const isComingSoon = !game.isAvailable;
   
   return (
     <Card className={`overflow-hidden transition-shadow duration-300 ${

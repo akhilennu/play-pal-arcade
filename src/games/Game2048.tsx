@@ -1,13 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Game2048: React.FC = () => {
   const { state, dispatch } = useGameContext();
   const { activeProfileId } = state;
+  const isMobile = useIsMobile();
   
   // Game state
   const [board, setBoard] = useState<number[][]>(Array(4).fill(0).map(() => Array(4).fill(0)));
@@ -15,6 +18,7 @@ const Game2048: React.FC = () => {
   const [bestScore, setBestScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [hasChanged, setHasChanged] = useState(false);
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
   
   // Initialize game
   const initializeGame = () => {
@@ -318,6 +322,94 @@ const Game2048: React.FC = () => {
     }
   };
   
+  // Handle touch events for mobile swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (gameOver) return;
+    const touch = e.touches[0];
+    setTouchStart({
+      x: touch.clientX,
+      y: touch.clientY
+    });
+  };
+  
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart || gameOver) return;
+    
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
+    
+    // Determine direction of swipe based on which delta is larger
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal swipe
+      if (deltaX > 20) {
+        // Right swipe
+        const result = moveRight(board);
+        processGameMove(result);
+      } else if (deltaX < -20) {
+        // Left swipe
+        const result = moveLeft(board);
+        processGameMove(result);
+      }
+    } else {
+      // Vertical swipe
+      if (deltaY > 20) {
+        // Down swipe
+        const result = moveDown(board);
+        processGameMove(result);
+      } else if (deltaY < -20) {
+        // Up swipe
+        const result = moveUp(board);
+        processGameMove(result);
+      }
+    }
+    
+    setTouchStart(null);
+  };
+  
+  // Process game move result
+  const processGameMove = (result: { newBoard: number[][], newScore: number, changed: boolean } | undefined) => {
+    if (!result?.changed) return;
+    
+    setHasChanged(true);
+    setBoard(result.newBoard);
+    setScore(result.newScore);
+    
+    if (result.newScore > bestScore) {
+      setBestScore(result.newScore);
+    }
+    
+    // Add a new tile after the move
+    const boardAfterNewTile = result.newBoard.map(row => [...row]);
+    addRandomTile(boardAfterNewTile);
+    
+    // Check if game is over
+    if (checkGameOver(boardAfterNewTile)) {
+      setGameOver(true);
+      
+      // Record score
+      if (activeProfileId) {
+        dispatch({
+          type: 'ADD_SCORE',
+          payload: {
+            userId: activeProfileId,
+            gameId: 'game2048',
+            score: result.newScore,
+            difficulty: GameDifficulty.EASY,
+            date: new Date(),
+          },
+        });
+        
+        toast({
+          title: "Game Over",
+          description: `Your final score: ${result.newScore}`,
+        });
+      }
+    }
+    
+    setBoard(boardAfterNewTile);
+  };
+  
   // Get color for tile based on its value
   const getTileColor = (value: number) => {
     switch (value) {
@@ -365,7 +457,11 @@ const Game2048: React.FC = () => {
         </div>
       </div>
       
-      <Card className="flex-grow flex items-center justify-center p-4 bg-game2048-primary/5">
+      <Card 
+        className="flex-grow flex items-center justify-center p-4 bg-game2048-primary/5"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="w-full max-w-md aspect-square bg-game2048-secondary/20 p-2 rounded-lg">
           <div className="grid grid-cols-4 grid-rows-4 gap-2 h-full">
             {board.flat().map((value, index) => (
@@ -395,9 +491,38 @@ const Game2048: React.FC = () => {
       )}
       
       <div className="mt-4 flex justify-center">
-        <div className="bg-muted/40 p-3 rounded-md text-center text-sm">
-          <p className="font-medium mb-1">How to Play:</p>
-          <p>Use arrow keys to move tiles. When two tiles with the same number touch, they merge!</p>
+        <div className="bg-muted/40 p-4 rounded-md text-center text-sm">
+          <p className="font-medium mb-2">How to Play 2048:</p>
+          <div className="text-left space-y-3">
+            <div>
+              <p className="font-medium">1. Goal:</p>
+              <p>Merge tiles with the same number to reach the 2048 tile.</p>
+            </div>
+            
+            <div>
+              <p className="font-medium">2. Controls (Mobile):</p>
+              <p>Swipe up, down, left, or right to move the tiles.</p>
+              <p>When two tiles with the same number touch, they merge into one with their combined value.</p>
+            </div>
+            
+            <div>
+              <p className="font-medium">3. Game Progression:</p>
+              <p>After every swipe, a new tile (2 or 4) appears randomly.</p>
+              <p>Merged tiles combine only once per move.</p>
+              <p>The game ends if no valid moves are left.</p>
+            </div>
+            
+            <div>
+              <p className="font-medium">4. Winning:</p>
+              <p>Reach the 2048 tile to win the game. Continue playing for a higher score if desired.</p>
+            </div>
+            
+            <div>
+              <p className="font-medium">5. Tips:</p>
+              <p>Keep your highest tile in a corner.</p>
+              <p>Think ahead before swiping to avoid blocking merges.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

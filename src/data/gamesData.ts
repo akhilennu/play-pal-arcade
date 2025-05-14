@@ -14,7 +14,8 @@ export const games: Game[] = [
       GameDifficulty.HARD
     ],
     supportsMultiplayer: true,
-    category: "classic"
+    category: "classic",
+    isAvailable: true
   },
   {
     id: "memorymatch",
@@ -28,7 +29,8 @@ export const games: Game[] = [
       GameDifficulty.HARD
     ],
     supportsMultiplayer: false,
-    category: "classic"
+    category: "classic",
+    isAvailable: true
   },
   {
     id: "game2048",
@@ -40,7 +42,8 @@ export const games: Game[] = [
       GameDifficulty.EASY
     ],
     supportsMultiplayer: false,
-    category: "puzzle"
+    category: "puzzle",
+    isAvailable: true
   },
   {
     id: "sudoku",
@@ -54,7 +57,8 @@ export const games: Game[] = [
       GameDifficulty.HARD
     ],
     supportsMultiplayer: false,
-    category: "puzzle"
+    category: "puzzle",
+    isAvailable: false
   },
   {
     id: "connectfour",
@@ -66,7 +70,8 @@ export const games: Game[] = [
       GameDifficulty.MEDIUM
     ],
     supportsMultiplayer: true,
-    category: "classic"
+    category: "classic",
+    isAvailable: false
   },
   {
     id: "hangman",
@@ -80,7 +85,8 @@ export const games: Game[] = [
       GameDifficulty.HARD
     ],
     supportsMultiplayer: false,
-    category: "casual"
+    category: "casual",
+    isAvailable: false
   }
 ];
 
@@ -92,4 +98,9 @@ export const getGameById = (id: string): Game | undefined => {
 // Helper function to get games by category
 export const getGamesByCategory = (category: string): Game[] => {
   return games.filter(game => game.category === category);
+};
+
+// Helper function to get available games
+export const getAvailableGames = (): Game[] => {
+  return games.filter(game => game.isAvailable);
 };

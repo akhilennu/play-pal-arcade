@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Grid2X2, ListCheck, Plus, HelpCircle, User, Users } from 'lucide-react';
 import { Game } from '@/types';
 import { useGameContext } from '@/contexts/GameContext';
+import { toast } from '@/components/ui/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GameCardProps {
   game: Game;
@@ -15,12 +17,19 @@ interface GameCardProps {
 const GameCard: React.FC<GameCardProps> = ({ game }) => {
   const navigate = useNavigate();
   const { dispatch } = useGameContext();
+  const isMobile = useIsMobile();
   
   const handlePlayClick = () => {
-    if (!game.id.startsWith('comingsoon')) {
-      dispatch({ type: "SET_CURRENT_GAME", payload: game.id });
-      navigate(`/game/${game.id}`);
+    if (game.id.startsWith('comingsoon') || !game.isAvailable) {
+      toast({
+        title: "Coming Soon!",
+        description: "This game is currently in development and will be available soon.",
+      });
+      return;
     }
+    
+    dispatch({ type: "SET_CURRENT_GAME", payload: game.id });
+    navigate(`/game/${game.id}`);
   };
   
   const getGameIcon = () => {
@@ -32,18 +41,27 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
     }
   };
   
+  const isComingSoon = game.id.startsWith('comingsoon') || !game.isAvailable;
+  
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-300">
+    <Card className={`overflow-hidden transition-shadow duration-300 ${
+      isComingSoon ? 'opacity-70' : 'hover:shadow-md'
+    }`}>
       <CardHeader className={`bg-${game.id === "tictactoe" ? "tictactoe-primary/10" : 
-                           game.id === "memorymatch" ? "memory-primary/10" : 
-                           game.id === "game2048" ? "game2048-primary/10" : 
-                           "primary/10"}`}>
+                             game.id === "memorymatch" ? "memory-primary/10" : 
+                             game.id === "game2048" ? "game2048-primary/10" : 
+                             "primary/10"}`}>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <span className="p-2 rounded-full bg-background">
               {getGameIcon()}
             </span>
             {game.name}
+            {isComingSoon && (
+              <Badge variant="outline" className="ml-2">
+                Coming Soon
+              </Badge>
+            )}
           </CardTitle>
           <Badge variant="outline">
             {game.category}
@@ -71,12 +89,11 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
       </CardContent>
       <CardFooter className="bg-muted/30 flex justify-between">
         <Button 
-          variant={game.id.startsWith('comingsoon') ? "outline" : "default"}
-          className={`w-full ${game.id.startsWith('comingsoon') ? "" : "bg-primary/80 hover:bg-primary"}`}
+          variant={isComingSoon ? "outline" : "default"}
+          className={`w-full ${isComingSoon ? "" : "bg-primary/80 hover:bg-primary"}`}
           onClick={handlePlayClick}
-          disabled={game.id.startsWith('comingsoon')}
         >
-          {game.id.startsWith('comingsoon') ? "Coming Soon" : "Play Now"}
+          {isComingSoon ? "Coming Soon" : "Play Now"}
         </Button>
       </CardFooter>
     </Card>

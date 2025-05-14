@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
@@ -17,6 +17,7 @@ import { ArrowLeft, User, Users } from 'lucide-react';
 import { getGameById } from '@/data/gamesData';
 import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty } from '@/types';
+import GameLoading from './GameLoading';
 
 // Lazy load games
 const TicTacToe = lazy(() => import('@/games/TicTacToe'));
@@ -44,10 +45,10 @@ const GameWrapper: React.FC = () => {
   const game = gameId ? getGameById(gameId) : null;
   
   // Get current game settings
-  const [difficulty, setDifficulty] = useState<GameDifficulty>(
+  const [difficulty, setDifficulty] = React.useState<GameDifficulty>(
     state.gameSettings.difficulty
   );
-  const [isMultiplayer, setIsMultiplayer] = useState<boolean>(
+  const [isMultiplayer, setIsMultiplayer] = React.useState<boolean>(
     state.gameSettings.isMultiplayer
   );
   
@@ -176,7 +177,7 @@ const GameWrapper: React.FC = () => {
           {/* Game area */}
           <div className="lg:col-span-3">
             <Card className="p-0 overflow-hidden h-[70vh]">
-              <Suspense fallback={<div className="w-full h-full flex items-center justify-center">Loading game...</div>}>
+              <Suspense fallback={<GameLoading />}>
                 <GameLoader gameId={game.id} />
               </Suspense>
             </Card>

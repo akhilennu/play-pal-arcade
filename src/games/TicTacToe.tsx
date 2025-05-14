@@ -64,30 +64,30 @@ const TicTacToe: React.FC = () => {
       setWinner(gameWinner);
       
       // Update score if game is won
-      if (gameWinner !== 'draw' && activeProfileId) {
-        const score = gameWinner === 'X' ? 10 : 5;
-        dispatch({
-          type: 'ADD_SCORE',
-          payload: {
-            userId: activeProfileId,
-            gameId: 'tictactoe',
-            score,
-            difficulty: difficulty as GameDifficulty,
-            date: new Date(),
-          },
-        });
-        
-        toast({
-          title: gameWinner === 'draw' ? "It's a Draw!" : `${gameWinner} Wins!`,
-          description: gameWinner === 'draw' 
-            ? "The game ended in a draw." 
-            : `Player ${gameWinner} has won the game.`,
-        });
-      } else if (gameWinner === 'draw' && activeProfileId) {
-        toast({
-          title: "It's a Draw!",
-          description: "The game ended in a draw.",
-        });
+      if (activeProfileId) {
+        if (gameWinner === 'X' || gameWinner === 'O') {
+          const score = gameWinner === 'X' ? 10 : 5;
+          dispatch({
+            type: 'ADD_SCORE',
+            payload: {
+              userId: activeProfileId,
+              gameId: 'tictactoe',
+              score,
+              difficulty: difficulty as GameDifficulty,
+              date: new Date(),
+            },
+          });
+          
+          toast({
+            title: `${gameWinner} Wins!`,
+            description: `Player ${gameWinner} has won the game.`,
+          });
+        } else if (gameWinner === 'draw') {
+          toast({
+            title: "It's a Draw!",
+            description: "The game ended in a draw.",
+          });
+        }
       }
       
       return;
@@ -132,18 +132,18 @@ const TicTacToe: React.FC = () => {
         setWinner(gameWinner);
         
         // Update score if AI wins
-        if (gameWinner !== 'draw' && activeProfileId) {
-          toast({
-            title: gameWinner === 'draw' ? "It's a Draw!" : `${gameWinner} Wins!`,
-            description: gameWinner === 'draw' 
-              ? "The game ended in a draw." 
-              : `Player ${gameWinner} has won the game.`,
-          });
-        } else if (gameWinner === 'draw') {
-          toast({
-            title: "It's a Draw!",
-            description: "The game ended in a draw.",
-          });
+        if (activeProfileId) {
+          if (gameWinner === 'X' || gameWinner === 'O') {
+            toast({
+              title: `${gameWinner} Wins!`,
+              description: `Player ${gameWinner} has won the game.`,
+            });
+          } else if (gameWinner === 'draw') {
+            toast({
+              title: "It's a Draw!",
+              description: "The game ended in a draw.",
+            });
+          }
         }
       }
       

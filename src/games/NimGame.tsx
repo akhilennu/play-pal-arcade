@@ -7,11 +7,13 @@ import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { motion } from 'framer-motion';
+import { useSoundEffects, SoundType } from '@/hooks/use-sound-effects';
 
 const NimGame: React.FC = () => {
   const { state, dispatch } = useGameContext();
   const { activeProfileId, gameSettings } = state;
   const isMobile = useIsMobile();
+  const { play } = useSoundEffects();
   
   // Game state
   const [piles, setPiles] = useState<number[]>([3, 4, 5]); // Default pile sizes
@@ -72,6 +74,7 @@ const NimGame: React.FC = () => {
     
     setSelectedPile(pileIndex);
     setSelectedCount(1); // Start with selecting 1 stone
+    play(SoundType.CLICK);
   };
   
   // Handle stone selection (increase/decrease)
@@ -81,6 +84,7 @@ const NimGame: React.FC = () => {
     const newCount = selectedCount + amount;
     if (newCount >= 1 && newCount <= piles[selectedPile]) {
       setSelectedCount(newCount);
+      play(SoundType.CLICK);
     }
   };
   
@@ -96,14 +100,22 @@ const NimGame: React.FC = () => {
     newPiles[finalPileIndex] -= finalCount;
     setPiles(newPiles);
     
+    // Play sound
+    play(SoundType.MERGE);
+    
     // Check if game is over
     const remainingStones = newPiles.reduce((sum, pile) => sum + pile, 0);
     if (remainingStones === 0) {
       setGameOver(true);
-      setWinner(currentPlayer === 1 ? 2 : 1); // Last player to move loses
+      // Set winner to the player who DIDN'T make the last move
+      const gameWinner = currentPlayer === 1 ? 2 : 1;
+      setWinner(gameWinner);
+      
+      // Play appropriate sound
+      play(currentPlayer === 1 ? SoundType.LOSE : SoundType.WIN);
       
       // Record score if player wins against AI
-      if (activeProfileId && !isMultiplayer && winner === 1) {
+      if (activeProfileId && !isMultiplayer && gameWinner === 1) {
         dispatch({
           type: 'ADD_SCORE',
           payload: {
@@ -118,7 +130,7 @@ const NimGame: React.FC = () => {
       
       toast({
         title: "Game Over!",
-        description: `Player ${winner} wins!`,
+        description: `Player ${gameWinner} wins!`,
       });
     }
     
@@ -168,7 +180,7 @@ const NimGame: React.FC = () => {
             variant="outline"
             className="mt-2"
             onClick={() => handleSelectPile(pileIndex)}
-            disabled={gameOver || currentPlayer !== 1 || (isMultiplayer ? false : currentPlayer === 2)}
+            disabled={gameOver || currentPlayer !== 1 || (!isMultiplayer && currentPlayer === 2)}
           >
             Select
           </Button>

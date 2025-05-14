@@ -83,6 +83,11 @@ const TicTacToe: React.FC = () => {
             ? "The game ended in a draw." 
             : `Player ${gameWinner} has won the game.`,
         });
+      } else if (gameWinner === 'draw' && activeProfileId) {
+        toast({
+          title: "It's a Draw!",
+          description: "The game ended in a draw.",
+        });
       }
       
       return;
@@ -133,6 +138,11 @@ const TicTacToe: React.FC = () => {
             description: gameWinner === 'draw' 
               ? "The game ended in a draw." 
               : `Player ${gameWinner} has won the game.`,
+          });
+        } else if (gameWinner === 'draw') {
+          toast({
+            title: "It's a Draw!",
+            description: "The game ended in a draw.",
           });
         }
       }

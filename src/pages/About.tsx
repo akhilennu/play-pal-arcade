@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import NavBar from '@/components/NavBar';
-import { ArrowLeft, Info, GameController, Trophy, Settings } from 'lucide-react';
+import { ArrowLeft, Info, Gamepad, Trophy, Settings } from 'lucide-react';
 
 const About: React.FC = () => {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ const About: React.FC = () => {
                 commute or a longer session to train your brain, Game Hub has something for everyone.
               </p>
               <h3 className="flex items-center mt-6 mb-3">
-                <GameController className="mr-2 h-5 w-5" />
+                <Gamepad className="mr-2 h-5 w-5" />
                 Features
               </h3>
               <ul>

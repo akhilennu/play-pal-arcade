@@ -11,7 +11,7 @@ export interface Game {
   name: string;
   description: string;
   icon: string; // Lucide icon name
-  component: React.ComponentType;
+  component: () => Promise<{ default: React.ComponentType }>;
   availableDifficulties: GameDifficulty[];
   supportsMultiplayer: boolean;
   category: "puzzle" | "strategy" | "classic" | "casual";

@@ -7,7 +7,7 @@ export const games: Game[] = [
     name: "Tic-Tac-Toe",
     description: "The classic game of X's and O's. Be the first to get three in a row!",
     icon: "grid-2x2",
-    component: () => import("@/games/TicTacToe").then(module => module.default),
+    component: () => import("@/games/TicTacToe"),
     availableDifficulties: [GameDifficulty.EASY, GameDifficulty.MEDIUM, GameDifficulty.HARD],
     supportsMultiplayer: true,
     category: "classic"
@@ -17,7 +17,7 @@ export const games: Game[] = [
     name: "Memory Match",
     description: "Test your memory by finding matching pairs of cards.",
     icon: "square-check",
-    component: () => import("@/games/MemoryMatch").then(module => module.default),
+    component: () => import("@/games/MemoryMatch"),
     availableDifficulties: [GameDifficulty.EASY, GameDifficulty.MEDIUM, GameDifficulty.HARD],
     supportsMultiplayer: false,
     category: "casual"
@@ -27,7 +27,7 @@ export const games: Game[] = [
     name: "2048",
     description: "Combine tiles to reach 2048 and beyond in this addictive puzzle game!",
     icon: "plus",
-    component: () => import("@/games/Game2048").then(module => module.default),
+    component: () => import("@/games/Game2048"),
     availableDifficulties: [GameDifficulty.EASY],
     supportsMultiplayer: false,
     category: "puzzle"
@@ -37,7 +37,7 @@ export const games: Game[] = [
     name: "Sudoku",
     description: "Coming Soon: Fill the grid with numbers 1-9 without repeating in rows, columns, or boxes.",
     icon: "help-circle",
-    component: () => import("@/components/ComingSoon").then(module => module.default),
+    component: () => import("@/components/ComingSoon"),
     availableDifficulties: [GameDifficulty.EASY, GameDifficulty.MEDIUM, GameDifficulty.HARD],
     supportsMultiplayer: false,
     category: "puzzle"
@@ -47,7 +47,7 @@ export const games: Game[] = [
     name: "Hangman",
     description: "Coming Soon: Guess the word one letter at a time before the hangman is complete.",
     icon: "help-circle",
-    component: () => import("@/components/ComingSoon").then(module => module.default),
+    component: () => import("@/components/ComingSoon"),
     availableDifficulties: [GameDifficulty.EASY, GameDifficulty.MEDIUM, GameDifficulty.HARD],
     supportsMultiplayer: false,
     category: "classic"
@@ -57,7 +57,7 @@ export const games: Game[] = [
     name: "Connect Four",
     description: "Coming Soon: Drop discs to connect four of your color vertically, horizontally, or diagonally.",
     icon: "help-circle",
-    component: () => import("@/components/ComingSoon").then(module => module.default),
+    component: () => import("@/components/ComingSoon"),
     availableDifficulties: [GameDifficulty.EASY],
     supportsMultiplayer: true,
     category: "classic"

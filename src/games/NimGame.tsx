@@ -179,7 +179,7 @@ const NimGame: React.FC = () => {
             variant="outline"
             className="mt-2"
             onClick={() => handleSelectPile(pileIndex)}
-            disabled={gameOver || currentPlayer !== 1 || !isMultiplayer && currentPlayer === 2}
+            disabled={gameOver || currentPlayer !== 1}
           >
             Select
           </Button>

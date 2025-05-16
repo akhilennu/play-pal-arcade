@@ -164,7 +164,11 @@ const GameWrapper: React.FC = () => {
           </Dialog>
         </div>
         
-        <Card className="p-0 overflow-hidden flex-grow flex flex-col"> 
+        {/* The Card component hosts the actual game.
+            - flex-grow: Allows it to take up available space in the main content area.
+            - flex flex-col: Lays out its children (the game) vertically.
+            - min-h-0: Crucial for allowing this Card to shrink below its content's intrinsic height. This prevents the game (which might be h-full) from pushing the Card and subsequently the 'main' element to be too tall, thus avoiding page scrollbars. */}
+        <Card className="p-0 overflow-hidden flex-grow flex flex-col min-h-0"> 
           <Suspense fallback={<GameLoading />}>
             {gameId && <GameLoader gameId={gameId} />}
           </Suspense>

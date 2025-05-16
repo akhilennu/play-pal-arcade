@@ -86,7 +86,7 @@ export const games: Game[] = [
     ],
     supportsMultiplayer: true,
     category: "strategy",
-    isAvailable: true
+    isAvailable: false
   },
   {
     id: "hangman",
@@ -101,7 +101,7 @@ export const games: Game[] = [
     ],
     supportsMultiplayer: false,
     category: "casual",
-    isAvailable: true
+    isAvailable: false
   }
 ];
 

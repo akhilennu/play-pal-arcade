@@ -3,14 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { useGameContext } from '@/contexts/GameContext';
-import { GameDifficulty } from '@/types';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { HelpCircle } from 'lucide-react';
+import { GameDifficulty } from '@/types'; // GameDifficulty is used in dispatch
 
 const Game2048: React.FC = () => {
   const { state: gameContextState, dispatch } = useGameContext();
   const { activeProfileId } = gameContextState;
-  const isMobile = useIsMobile();
   
   // Game state
   const [board, setBoard] = useState<number[][]>(Array(4).fill(0).map(() => Array(4).fill(0)));
@@ -42,6 +39,7 @@ const Game2048: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('game2048BestScore', bestScore.toString());
   }, [bestScore]);
+
   
   // Add a new random tile to the board
   const addRandomTile = (currentBoard: number[][]) => {
@@ -178,6 +176,15 @@ const Game2048: React.FC = () => {
     if (result) processMoveResult(result);
   }, [gameOver, board, score, bestScore, activeProfileId, dispatch]);
   
+
+  // Add and remove keyboard event listener
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]); // Re-attach if handleKeyDown changes (due to its dependencies)
+
   // Handle touch events for mobile swipe
   const handleTouchStart = (e: React.TouchEvent) => {
     if (gameOver) return;
@@ -198,22 +205,22 @@ const Game2048: React.FC = () => {
     // Determine direction of swipe based on which delta is larger
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
       // Horizontal swipe
-      if (Math.abs(deltaX) > 30) {
+      if (deltaX > 30) { // Check positive deltaX for right swipe
         // Right swipe
         const result = moveRight(board, score);
         processMoveResult(result);
-      } else if (Math.abs(deltaX) < -30) {
+      } else if (deltaX < -30) { // Check negative deltaX for left swipe
         // Left swipe
         const result = moveLeft(board, score);
         processMoveResult(result);
       }
     } else {
       // Vertical swipe
-      if (Math.abs(deltaY) > 30) {
+      if (deltaY > 30) { // Check positive deltaY for down swipe
         // Down swipe
         const result = moveDown(board, score);
         processMoveResult(result);
-      } else if (Math.abs(deltaY) < -30) {
+      } else if (deltaY < -30) { // Check negative deltaY for up swipe
         // Up swipe
         const result = moveUp(board, score);
         processMoveResult(result);
@@ -280,14 +287,22 @@ const Game2048: React.FC = () => {
   
   // Get font size for tile based on its value
   const getTileTextSize = (value: number) => {
-    if (value === 0) return 'text-xl';
-    if (value < 100) return 'text-3xl sm:text-4xl';
-    if (value < 1000) return 'text-2xl sm:text-3xl';
-    return 'text-xl sm:text-2xl';
+    if (value === 0) return 'text-lg sm:text-xl';         // e.g., 18px base, 20px on sm+
+    if (value < 100) return 'text-xl sm:text-3xl';       // e.g., 20px base, 30px on sm+
+    if (value < 1000) return 'text-lg sm:text-2xl';      // e.g., 18px base, 24px on sm+
+    return 'text-base sm:text-xl';                       // e.g., 16px base, 20px on sm+
   };
   
   return (
-    <div className="flex flex-col h-full p-2 sm:p-4">
+    // Ensure this component tries to fill its parent's height and doesn't overflow internally.
+    // `overflow-hidden` on the root prevents its children from causing scrollbars on the parent page,
+    // assuming this component itself is meant to be self-contained within its allocated height.
+    // The `h-full` means it will respect the height given by its parent.
+    <div 
+      className="flex flex-col h-full p-2 sm:p-4 overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 flex-shrink-0">
         <div className="flex gap-2 sm:gap-4 w-full sm:w-auto justify-around sm:justify-start">
           <div className="bg-muted/50 dark:bg-muted/20 rounded-lg p-2 sm:p-3 text-center min-w-[80px] sm:min-w-[100px] shadow">
@@ -305,12 +320,19 @@ const Game2048: React.FC = () => {
       </div>
       
       <div 
-        className="flex-grow flex items-center justify-center p-1" 
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        // This container will take up the remaining vertical space.
+        // `min-h-0` is important for flex children in a column layout that need to shrink.
+        // It allows this container to shrink below its content's intrinsic minimum size if necessary,
+        // preventing it from pushing the parent (the root div of Game2048) to overflow.
+        className="flex-grow flex items-center justify-center p-1 min-h-0" 
       >
-        <div className="w-full max-w-[400px] sm:max-w-[480px] aspect-square bg-muted/70 dark:bg-muted/30 p-1.5 sm:p-2 rounded-lg shadow-lg">
-          <div className="grid grid-cols-4 grid-rows-4 gap-1.5 sm:gap-2 h-full rounded-md overflow-hidden">
+        {/* Board Container: Reduced base padding for mobile (p-1), sm screens use p-1.5 */}
+        <div className={`
+          w-full h-full 
+          max-w-[400px] sm:max-w-[480px] 
+          max-h-[400px] sm:max-h-[480px]
+          aspect-square bg-muted/70 dark:bg-muted/30 p-1 sm:p-1.5 rounded-lg shadow-lg`}>
+          <div className="grid grid-cols-4 grid-rows-4 gap-1 sm:gap-1.5 h-full rounded-md overflow-hidden">
             {board.flat().map((value, index) => (
               <div
                 key={index}

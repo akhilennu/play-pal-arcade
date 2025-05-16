@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,8 +9,7 @@ import {
 } from '@/components/ui/select';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { User, Users, Volume2, VolumeX } from 'lucide-react';
-import { GameDifficulty } from '@/types';
-import { Game } from '@/data/gamesData'; // Assuming Game type is exported
+import { GameDifficulty, Game } from '@/types'; // Corrected import for Game type
 
 interface GameSettingsModalProps {
   game: Game | null;
@@ -127,4 +125,3 @@ const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
 };
 
 export default GameSettingsModal;
-

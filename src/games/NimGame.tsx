@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useGameContext } from '@/contexts/GameContext';
@@ -7,7 +6,6 @@ import { SoundType, useSoundEffects } from '@/hooks/use-sound-effects';
 // Import the new components
 import PileComponent from './nim/PileComponent';
 import GameControls from './nim/GameControls';
-import GameInstructions from './nim/GameInstructions';
 import GameOverMessage from './nim/GameOverMessage';
 import GameHeader from './nim/GameHeader';
 import GameStatus from './nim/GameStatus';
@@ -25,7 +23,6 @@ const NimGame: React.FC = () => {
   const [selectedCount, setSelectedCount] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<1 | 2 | null>(null);
-  const [showInstructions, setShowInstructions] = useState(false);
   const isMultiplayer = gameSettings.isMultiplayer;
   
   // Set up AI turn if needed
@@ -115,17 +112,11 @@ const NimGame: React.FC = () => {
     setSelectedCount(0);
   };
   
-  // Toggle instructions visibility
-  const handleToggleInstructions = () => {
-    setShowInstructions(!showInstructions);
-  };
-  
   return (
     <div className="flex flex-col h-full p-4">
       {/* Game Header */}
       <GameHeader 
         onRestart={handleResetGame}
-        onToggleInstructions={handleToggleInstructions}
       />
       
       <Card className="flex-grow flex flex-col p-4">
@@ -173,12 +164,6 @@ const NimGame: React.FC = () => {
           onRestart={handleResetGame}
         />
       </Card>
-      
-      {/* Game Instructions */}
-      <GameInstructions
-        showInstructions={showInstructions}
-        onToggleInstructions={handleToggleInstructions}
-      />
     </div>
   );
 };

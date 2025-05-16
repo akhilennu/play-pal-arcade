@@ -6,8 +6,8 @@ export const games: Game[] = [
     id: "tictactoe",
     name: "Tic-Tac-Toe",
     description: "The classic game of X's and O's. Get three in a row to win!",
-    icon: "gamepad-2", // Keep existing or choose from allowed
-    component: () => import("../games/TicTacToe").then(module => ({ default: module.default })),
+    icon: "gamepad-2",
+    component: () => import("../games/TicTacToe"),
     availableDifficulties: [
       GameDifficulty.EASY,
       GameDifficulty.MEDIUM,
@@ -21,8 +21,8 @@ export const games: Game[] = [
     id: "memorymatch",
     name: "Memory Match",
     description: "Test your memory by matching pairs of cards.",
-    icon: "brain", // Keep existing or choose from allowed
-    component: () => import("../games/MemoryMatch").then(module => ({ default: module.default })),
+    icon: "brain",
+    component: () => import("../games/MemoryMatch"),
     availableDifficulties: [
       GameDifficulty.EASY,
       GameDifficulty.MEDIUM,
@@ -36,10 +36,10 @@ export const games: Game[] = [
     id: "game2048",
     name: "2048",
     description: "Slide numbered tiles and combine them to reach 2048!",
-    icon: "puzzle", // Keep existing or choose from allowed
-    component: () => import("../games/Game2048").then(module => ({ default: module.default })),
+    icon: "puzzle",
+    component: () => import("../games/Game2048"),
     availableDifficulties: [
-      GameDifficulty.EASY // 2048 typically doesn't have difficulty settings in this manner
+      GameDifficulty.EASY
     ],
     supportsMultiplayer: false,
     category: "puzzle",
@@ -49,8 +49,8 @@ export const games: Game[] = [
     id: "nim",
     name: "Nim",
     description: "Strategic pile game - remove objects to win!",
-    icon: "layers", // Keep existing or choose from allowed
-    component: () => import("../games/NimGame").then(module => ({ default: module.default })),
+    icon: "layers",
+    component: () => import("../games/NimGame"),
     availableDifficulties: [
       GameDifficulty.EASY,
       GameDifficulty.MEDIUM,
@@ -64,8 +64,8 @@ export const games: Game[] = [
     id: "sudoku",
     name: "Sudoku",
     description: "Fill the grid with numbers. Each row, column, and 3x3 box must contain numbers 1-9.",
-    icon: "grid-3x3", // Updated icon
-    component: () => import("../components/ComingSoon").then(module => ({ default: module.default })),
+    icon: "grid-3x3",
+    component: () => import("../components/ComingSoon"),
     availableDifficulties: [
       GameDifficulty.EASY,
       GameDifficulty.MEDIUM,
@@ -73,27 +73,27 @@ export const games: Game[] = [
     ],
     supportsMultiplayer: false,
     category: "puzzle",
-    isAvailable: false // Keep false as requested
+    isAvailable: false
   },
   {
     id: "connectfour",
     name: "Connect Four",
     description: "Drop discs to connect four of your color in a row.",
-    icon: "grid-2x2", // Updated icon
-    component: () => import("../components/ComingSoon").then(module => ({ default: module.default })),
+    icon: "grid-2x2",
+    component: () => import("../components/ComingSoon"),
     availableDifficulties: [
-      GameDifficulty.MEDIUM // Example, can be adjusted
+      GameDifficulty.MEDIUM
     ],
     supportsMultiplayer: true,
-    category: "strategy", // Or "classic"
-    isAvailable: true // Updated to true, points to ComingSoon
+    category: "strategy",
+    isAvailable: true
   },
   {
     id: "hangman",
     name: "Hangman",
     description: "Guess the word one letter at a time before the hangman is complete.",
-    icon: "pen", // Using 'pen' as it's in the allowed icons list. 'ALargeSmall' or 'PenTool' could be alternatives.
-    component: () => import("../components/ComingSoon").then(module => ({ default: module.default })),
+    icon: "pen",
+    component: () => import("../components/ComingSoon"),
     availableDifficulties: [
       GameDifficulty.EASY,
       GameDifficulty.MEDIUM,
@@ -101,7 +101,7 @@ export const games: Game[] = [
     ],
     supportsMultiplayer: false,
     category: "casual",
-    isAvailable: true // Updated to true, points to ComingSoon
+    isAvailable: true
   }
 ];
 

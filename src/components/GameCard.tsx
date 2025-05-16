@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -46,10 +47,7 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
     <Card className={`overflow-hidden transition-shadow duration-300 ${
       isComingSoon ? 'opacity-70' : 'hover:shadow-md'
     }`}>
-      <CardHeader className={`bg-${game.id === "tictactoe" ? "tictactoe-primary/10" : 
-                             game.id === "memorymatch" ? "memory-primary/10" : 
-                             game.id === "game2048" ? "game2048-primary/10" : 
-                             "primary/10"}`}>
+      <CardHeader className="bg-primary/10">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <span className="p-2 rounded-full bg-background">
@@ -89,7 +87,7 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
       <CardFooter className="bg-muted/30 flex justify-between">
         <Button 
           variant={isComingSoon ? "outline" : "default"}
-          className={`w-full ${isComingSoon ? "" : "bg-primary/80 hover:bg-primary"}`}
+          className={`w-full ${isComingSoon ? "" : "bg-primary hover:bg-primary/90"}`}
           onClick={handlePlayClick}
         >
           {isComingSoon ? "Coming Soon" : "Play Now"}

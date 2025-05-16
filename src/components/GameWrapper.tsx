@@ -1,3 +1,4 @@
+
 import React, { Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import GameSettingsModal from './GameSettingsModal';
 
-// Lazy load games
+// Lazy load games - FIXED: Using correct dynamic imports
 const TicTacToe = lazy(() => import('@/games/TicTacToe'));
 const MemoryMatch = lazy(() => import('@/games/MemoryMatch'));
 const Game2048 = lazy(() => import('@/games/Game2048'));
@@ -35,16 +36,12 @@ const GameInstructionsNim = lazy(() => import('@/games/nim/GameInstructions'));
 const GameInstructionsTicTacToe = lazy(() => import('@/games/tictactoe/GameInstructions'));
 const GameInstructionsMemoryMatch = lazy(() => import('@/games/memorymatch/GameInstructions'));
 const GameInstructions2048 = lazy(() => import('@/games/game2048/GameInstructions'));
-// Add imports for Hangman, ConnectFour instructions when created, or use a generic message
 
 const GameLoader: React.FC<{ gameId: string }> = ({ gameId }) => {
   const gameData = getGameById(gameId);
-  if (gameData?.component) {
-     // This relies on the component property in gamesData correctly pointing to the game or ComingSoon
-    const GameComponent = lazy(gameData.component);
-    return <GameComponent />;
-  }
-  switch (gameId) { // Fallback, ideally component from gamesData is always used
+  
+  // Fix: Don't rely on component property, directly use gameId to determine which game to load
+  switch (gameId) {
     case 'tictactoe':
       return <TicTacToe />;
     case 'memorymatch':
@@ -53,7 +50,10 @@ const GameLoader: React.FC<{ gameId: string }> = ({ gameId }) => {
       return <Game2048 />;
     case 'nim':
       return <NimGame />;
-    // For new games like hangman, connectfour, they will be handled by ComingSoon via gamesData
+    case 'hangman':
+    case 'connectfour':
+    case 'sudoku':
+      return <ComingSoon />;
     default:
       return <ComingSoon />;
   }
@@ -164,7 +164,7 @@ const GameWrapper: React.FC = () => {
           </Dialog>
         </div>
         
-        <Card className="p-0 overflow-hidden flex-grow flex flex-col"> {/* Ensure card grows and allows internal scrolling if game needs it */}
+        <Card className="p-0 overflow-hidden flex-grow flex flex-col"> 
           <Suspense fallback={<GameLoading />}>
             {gameId && <GameLoader gameId={gameId} />}
           </Suspense>

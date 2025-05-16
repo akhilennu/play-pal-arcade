@@ -1,31 +1,26 @@
 
 import React from 'react';
-// Button import might not be needed if the modal handles the close action
 
-interface GameInstructionsProps {
-  // showInstructions and onToggleInstructions are no longer needed
-  // as this component will be displayed directly within a modal.
-}
+// GameInstructionsProps is not strictly needed if no props are passed,
+// but kept for consistency or future props.
+interface GameInstructionsProps {}
 
 const GameInstructions: React.FC<GameInstructionsProps> = () => {
-  // The parent Dialog/Modal will handle visibility and closing.
-  // So, we don't need the if (!showInstructions) return null; check anymore.
-  // Also, the internal "Close" button is removed, relying on DialogClose.
-
   return (
-    <div className="mt-4 text-sm"> {/* Removed bg-muted/40 and p-4, DialogContent will provide padding */}
-      {/* Removed the header with "How to Play Nim:" and "Close" button */}
+    <div className="mt-4 text-sm">
       <div className="text-left space-y-2">
-        <p><span className="font-medium">Goal:</span> Force your opponent to take the last object.</p>
-        <p><span className="font-medium">Setup:</span> The game starts with several piles of objects.</p>
-        <p><span className="font-medium">Turns:</span> On your turn, select a pile and remove any number of objects from it (at least one).</p>
-        <p><span className="font-medium">Winning:</span> The player who takes the last object from the last pile loses (Misere play). If all objects are gone, and it was your turn to move, you lose.</p>
-        <p className="italic text-xs">(Note: The original description said "player who removes the last object loses", which is standard Nim. Some implementations vary, ensure this matches game logic.)</p>
-        <p><span className="font-medium">Strategy (Simple):</span> Try to leave your opponent with an odd number of piles each containing one object. Or, more generally, aim for a "Nim-sum" of zero after your move (advanced).</p>
+        <p><span className="font-medium">Overview:</span> Nim is a two-player strategy game.</p>
+        <p><span className="font-medium">Gameplay:</span> Players take turns removing one or more objects from a single pile.</p>
+        <p><span className="font-medium">Objective:</span> The player who removes the last object loses.</p>
+        <p><span className="font-medium">Rule:</span> Only one pile can be used per turn.</p>
+        {/* 
+          The original prompt mentioned: "The player who takes the last object from the last pile loses (Misere play)."
+          The new prompt is: "The player who removes the last object loses." 
+          This is consistent with Misere play, which is what the current gameLogic implements.
+        */}
       </div>
     </div>
   );
 };
 
 export default GameInstructions;
-

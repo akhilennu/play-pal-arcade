@@ -11,7 +11,6 @@ import {
 import NavBar from '@/components/NavBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Settings as SettingsIcon } from 'lucide-react';
 import { getGameById } from '@/data/gamesData';
 import { useGameContext } from '@/contexts/GameContext';
@@ -52,7 +51,6 @@ const GameWrapper: React.FC = () => {
   const { state, dispatch } = useGameContext();
   const game = gameId ? getGameById(gameId) : null;
   
-  // Get current game settings
   const [difficulty, setDifficulty] = React.useState<GameDifficulty>(
     state.gameSettings.difficulty
   );
@@ -60,7 +58,6 @@ const GameWrapper: React.FC = () => {
     state.gameSettings.isMultiplayer
   );
   
-  // Sound toggle
   const toggleSound = () => {
     dispatch({ type: "TOGGLE_SOUND", payload: !state.soundEnabled });
   };
@@ -114,7 +111,7 @@ const GameWrapper: React.FC = () => {
             <DialogTrigger asChild>
               <Button variant="outline" size="icon">
                 <SettingsIcon className="h-5 w-5" />
-                <span className="sr-only">Game Settings</span>
+                <span className="sr-only">Game Settings & Info</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
@@ -131,50 +128,13 @@ const GameWrapper: React.FC = () => {
           </Dialog>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Game info sidebar (formerly settings) */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardContent className="pt-6">
-                <h3 className="text-lg font-medium mb-4">Game Info</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Category</span>
-                    <Badge variant="outline">{game.category}</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Multiplayer</span>
-                    <Badge variant={game.supportsMultiplayer ? "default" : "outline"}>
-                      {game.supportsMultiplayer ? "Supported" : "Not supported"}
-                    </Badge>
-                  </div>
-                </div>
-                {/* Display available difficulties if only one, or mention it's configurable */}
-                {game.availableDifficulties.length === 1 && (
-                   <div className="mt-4">
-                     <span className="text-sm text-muted-foreground">Difficulty: </span>
-                     <span className="text-sm font-medium">{game.availableDifficulties[0].charAt(0).toUpperCase() + game.availableDifficulties[0].slice(1)}</span>
-                   </div>
-                )}
-                 {game.availableDifficulties.length > 1 && (
-                   <div className="mt-4">
-                    <span className="text-sm text-muted-foreground">Difficulty and other settings can be changed using the <SettingsIcon className="inline h-4 w-4 mx-1" /> icon above.</span>
-                   </div>
-                 )}
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Game area */}
-          <div className="lg:col-span-3">
-            {/* Ensure this Card or its direct child can scroll */}
-            <Card className="p-0 overflow-auto h-[70vh]">
-              <Suspense fallback={<GameLoading />}>
-                <GameLoader gameId={game.id} />
-              </Suspense>
-            </Card>
-          </div>
-        </div>
+        {/* Game area (now takes full width available in the grid) */}
+        {/* The grid is removed as the sidebar is gone, game takes full width */}
+        <Card className="p-0 overflow-auto h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)]"> {/* Adjusted height */}
+          <Suspense fallback={<GameLoading />}>
+            <GameLoader gameId={game.id} />
+          </Suspense>
+        </Card>
       </main>
     </div>
   );

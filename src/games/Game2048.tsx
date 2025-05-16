@@ -5,6 +5,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { HelpCircle } from 'lucide-react';
 
 const Game2048: React.FC = () => {
   const { state, dispatch } = useGameContext();
@@ -16,9 +17,7 @@ const Game2048: React.FC = () => {
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [hasChanged, setHasChanged] = useState(false);
   const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
-  const [showInstructions, setShowInstructions] = useState(false);
   
   // Initialize game
   const initializeGame = () => {
@@ -28,7 +27,6 @@ const Game2048: React.FC = () => {
     setBoard(newBoard);
     setScore(0);
     setGameOver(false);
-    setHasChanged(false);
   };
   
   // Load best score from localStorage
@@ -40,7 +38,6 @@ const Game2048: React.FC = () => {
     
     initializeGame();
     
-    // Add keyboard event listener
     window.addEventListener('keydown', handleKeyDown);
     
     return () => {
@@ -282,7 +279,6 @@ const Game2048: React.FC = () => {
     e.preventDefault();
     
     if (result?.changed) {
-      setHasChanged(true);
       setBoard(result.newBoard);
       setScore(result.newScore);
       
@@ -371,7 +367,6 @@ const Game2048: React.FC = () => {
   const processGameMove = (result: { newBoard: number[][], newScore: number, changed: boolean } | undefined) => {
     if (!result?.changed) return;
     
-    setHasChanged(true);
     setBoard(result.newBoard);
     setScore(result.newScore);
     
@@ -379,15 +374,11 @@ const Game2048: React.FC = () => {
       setBestScore(result.newScore);
     }
     
-    // Add a new tile after the move
     const boardAfterNewTile = result.newBoard.map(row => [...row]);
-    addRandomTile(boardAfterNewTile);
+    const tileAdded = addRandomTile(boardAfterNewTile);
     
-    // Check if game is over
     if (checkGameOver(boardAfterNewTile)) {
       setGameOver(true);
-      
-      // Record score
       if (activeProfileId) {
         dispatch({
           type: 'ADD_SCORE',
@@ -399,7 +390,6 @@ const Game2048: React.FC = () => {
             date: new Date(),
           },
         });
-        
         toast({
           title: "Game Over",
           description: `Your final score: ${result.newScore}`,
@@ -435,6 +425,13 @@ const Game2048: React.FC = () => {
     return 'text-2xl';
   };
   
+  const handleHowToPlay = () => {
+    toast({
+      title: "How to Play 2048",
+      description: isMobile ? "Swipe to move tiles. Merge identical tiles to create higher numbers. Reach 2048 to win!" : "Use arrow keys to move tiles. Merge identical tiles to create higher numbers. Reach 2048 to win!",
+    });
+  };
+  
   return (
     <div className="flex flex-col h-full p-4">
       <div className="mb-4 flex justify-between items-center">
@@ -455,8 +452,9 @@ const Game2048: React.FC = () => {
           </div>
           <div className="flex gap-2">
             <Button onClick={initializeGame} size="sm" variant="outline">Restart</Button>
-            <Button onClick={() => setShowInstructions(!showInstructions)} size="sm" variant="outline">
-              Help
+            <Button onClick={handleHowToPlay} size="sm" variant="outline">
+              <HelpCircle className="mr-1 h-4 w-4" />
+              How to Play
             </Button>
           </div>
         </div>
@@ -492,22 +490,6 @@ const Game2048: React.FC = () => {
           <h3 className="text-lg font-semibold mb-2">Game Over!</h3>
           <p>Your Score: {score}</p>
           <Button onClick={initializeGame} className="mt-2">Play Again</Button>
-        </div>
-      )}
-      
-      {showInstructions && (
-        <div className="mt-4 bg-muted/40 p-4 rounded-md text-center text-sm">
-          <div className="flex justify-between items-center mb-2">
-            <p className="font-medium">How to Play 2048:</p>
-            <Button size="sm" variant="ghost" onClick={() => setShowInstructions(false)}>Close</Button>
-          </div>
-          <div className="text-left space-y-2">
-            <p><span className="font-medium">Goal:</span> Merge tiles with the same number to reach the 2048 tile.</p>
-            <p><span className="font-medium">Controls:</span> Swipe in any direction to move tiles.</p>
-            <p><span className="font-medium">Progression:</span> A new tile (2 or 4) appears after each move.</p>
-            <p><span className="font-medium">Winning:</span> Reach 2048 to win. Keep playing for high scores.</p>
-            <p><span className="font-medium">Tips:</span> Keep your highest tile in a corner. Think ahead before swiping.</p>
-          </div>
         </div>
       )}
     </div>

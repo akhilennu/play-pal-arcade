@@ -126,15 +126,15 @@ const Index: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <NavBar />
-      <main className="flex-1 p-4 md:p-6">
-        <div className="mb-8">
+      <main className="flex-1 p-4 md:p-6 flex flex-col"> {/* Added flex flex-col */}
+        <div className="mb-8 flex-shrink-0"> {/* Added flex-shrink-0 */}
           <h1 className="text-3xl font-bold mb-2 animate-fade-in">Game Collection</h1>
           <p className="text-muted-foreground animate-fade-in delay-100">
             Select a game to play or browse by category.
           </p>
         </div>
 
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 flex-shrink-0"> {/* Added flex-shrink-0 */}
           <div className="flex space-x-2">
             <Button
               variant={viewMode === "grid" ? "default" : "outline"}
@@ -172,8 +172,8 @@ const Index: React.FC = () => {
           </div>
         </div>
         
-        <Tabs defaultValue="all" className="animate-fade-in">
-          <TabsList className="mb-6">
+        <Tabs defaultValue="all" className="animate-fade-in flex flex-col flex-grow"> {/* Added flex flex-col flex-grow */}
+          <TabsList className="mb-6 flex-shrink-0"> {/* Added flex-shrink-0 */}
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="puzzle">Puzzle</TabsTrigger>
             <TabsTrigger value="classic">Classic</TabsTrigger>
@@ -181,7 +181,7 @@ const Index: React.FC = () => {
             <TabsTrigger value="casual">Casual</TabsTrigger>
           </TabsList>
           
-          <ScrollArea className="h-[calc(100vh-260px)]">
+          <ScrollArea className="flex-grow"> {/* Removed fixed height, added flex-grow */}
             <TabsContent value="all" className="mt-0">
               <div className={viewMode === "grid" ? 
                 "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : 
@@ -241,3 +241,4 @@ const Index: React.FC = () => {
 };
 
 export default Index;
+

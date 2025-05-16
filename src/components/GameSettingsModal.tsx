@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,8 +9,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { User, Users, Volume2, VolumeX } from 'lucide-react';
-import { GameDifficulty, Game } from '@/types'; // Corrected import for Game type
+import { User, Users, Volume2, VolumeX, Info, Puzzle, Users2, ShieldQuestion } from 'lucide-react'; // Added Info, Puzzle, Users2, ShieldQuestion
+import { GameDifficulty, Game } from '@/types';
+import { Badge } from '@/components/ui/badge'; // Added Badge import
 
 interface GameSettingsModalProps {
   game: Game | null;
@@ -35,12 +37,41 @@ const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{game.name} Settings</DialogTitle>
+        <DialogTitle>{game.name} Settings & Info</DialogTitle>
         <DialogDescription>
-          Adjust the game settings below. Changes will be applied immediately.
+          Adjust game settings or view game information. Changes are applied immediately.
         </DialogDescription>
       </DialogHeader>
-      <div className="py-4 space-y-4">
+      
+      <div className="py-4 space-y-6"> {/* Increased spacing */}
+        {/* Game Info Section */}
+        <div>
+          <h4 className="text-md font-medium mb-2 flex items-center">
+            <Info className="mr-2 h-5 w-5 text-primary" />
+            Game Information
+          </h4>
+          <div className="space-y-1 text-sm pl-2 border-l-2 border-muted">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground flex items-center"><Puzzle className="mr-1.5 h-4 w-4"/>Category:</span>
+              <Badge variant="outline">{game.category.charAt(0).toUpperCase() + game.category.slice(1)}</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground flex items-center"><Users2 className="mr-1.5 h-4 w-4"/>Multiplayer:</span>
+              <Badge variant={game.supportsMultiplayer ? "secondary" : "outline"}>
+                {game.supportsMultiplayer ? "Supported" : "Single Player"}
+              </Badge>
+            </div>
+            {game.availableDifficulties.length === 1 && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground flex items-center"><ShieldQuestion className="mr-1.5 h-4 w-4"/>Default Difficulty:</span>
+                <Badge variant="outline">
+                  {game.availableDifficulties[0].charAt(0).toUpperCase() + game.availableDifficulties[0].slice(1)}
+                </Badge>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Difficulty selector */}
         {game.availableDifficulties.length > 1 && (
           <div>

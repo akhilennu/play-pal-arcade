@@ -6,7 +6,7 @@ export const games: Game[] = [
     id: "tictactoe",
     name: "Tic-Tac-Toe",
     description: "The classic game of X's and O's. Get three in a row to win!",
-    icon: "gamepad-2",
+    icon: "gamepad-2", // Keep existing or choose from allowed
     component: () => import("../games/TicTacToe").then(module => ({ default: module.default })),
     availableDifficulties: [
       GameDifficulty.EASY,
@@ -21,7 +21,7 @@ export const games: Game[] = [
     id: "memorymatch",
     name: "Memory Match",
     description: "Test your memory by matching pairs of cards.",
-    icon: "brain",
+    icon: "brain", // Keep existing or choose from allowed
     component: () => import("../games/MemoryMatch").then(module => ({ default: module.default })),
     availableDifficulties: [
       GameDifficulty.EASY,
@@ -36,10 +36,10 @@ export const games: Game[] = [
     id: "game2048",
     name: "2048",
     description: "Slide numbered tiles and combine them to reach 2048!",
-    icon: "puzzle",
+    icon: "puzzle", // Keep existing or choose from allowed
     component: () => import("../games/Game2048").then(module => ({ default: module.default })),
     availableDifficulties: [
-      GameDifficulty.EASY
+      GameDifficulty.EASY // 2048 typically doesn't have difficulty settings in this manner
     ],
     supportsMultiplayer: false,
     category: "puzzle",
@@ -49,7 +49,7 @@ export const games: Game[] = [
     id: "nim",
     name: "Nim",
     description: "Strategic pile game - remove objects to win!",
-    icon: "layers",
+    icon: "layers", // Keep existing or choose from allowed
     component: () => import("../games/NimGame").then(module => ({ default: module.default })),
     availableDifficulties: [
       GameDifficulty.EASY,
@@ -64,7 +64,7 @@ export const games: Game[] = [
     id: "sudoku",
     name: "Sudoku",
     description: "Fill the grid with numbers. Each row, column, and 3x3 box must contain numbers 1-9.",
-    icon: "table",
+    icon: "grid-3x3", // Updated icon
     component: () => import("../components/ComingSoon").then(module => ({ default: module.default })),
     availableDifficulties: [
       GameDifficulty.EASY,
@@ -73,26 +73,26 @@ export const games: Game[] = [
     ],
     supportsMultiplayer: false,
     category: "puzzle",
-    isAvailable: false
+    isAvailable: false // Keep false as requested
   },
   {
     id: "connectfour",
     name: "Connect Four",
     description: "Drop discs to connect four of your color in a row.",
-    icon: "disc",
+    icon: "grid-2x2", // Updated icon
     component: () => import("../components/ComingSoon").then(module => ({ default: module.default })),
     availableDifficulties: [
-      GameDifficulty.MEDIUM
+      GameDifficulty.MEDIUM // Example, can be adjusted
     ],
     supportsMultiplayer: true,
-    category: "classic",
-    isAvailable: false
+    category: "strategy", // Or "classic"
+    isAvailable: true // Updated to true, points to ComingSoon
   },
   {
     id: "hangman",
     name: "Hangman",
     description: "Guess the word one letter at a time before the hangman is complete.",
-    icon: "pen",
+    icon: "pen", // Using 'pen' as it's in the allowed icons list. 'ALargeSmall' or 'PenTool' could be alternatives.
     component: () => import("../components/ComingSoon").then(module => ({ default: module.default })),
     availableDifficulties: [
       GameDifficulty.EASY,
@@ -101,7 +101,7 @@ export const games: Game[] = [
     ],
     supportsMultiplayer: false,
     category: "casual",
-    isAvailable: false
+    isAvailable: true // Updated to true, points to ComingSoon
   }
 ];
 

@@ -11,7 +11,7 @@ import {
 import NavBar from '@/components/NavBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Settings as SettingsIcon, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Settings as SettingsIcon } from 'lucide-react';
 import { getGameById } from '@/data/gamesData';
 import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty } from '@/types';
@@ -30,11 +30,21 @@ const Game2048 = lazy(() => import('@/games/Game2048'));
 const NimGame = lazy(() => import('@/games/NimGame'));
 const ComingSoon = lazy(() => import('@/components/ComingSoon'));
 
-// Import Nim instructions (and others as they are created)
+// Import instruction components
 const GameInstructionsNim = lazy(() => import('@/games/nim/GameInstructions'));
+const GameInstructionsTicTacToe = lazy(() => import('@/games/tictactoe/GameInstructions'));
+const GameInstructionsMemoryMatch = lazy(() => import('@/games/memorymatch/GameInstructions'));
+const GameInstructions2048 = lazy(() => import('@/games/game2048/GameInstructions'));
+// Add imports for Hangman, ConnectFour instructions when created, or use a generic message
 
 const GameLoader: React.FC<{ gameId: string }> = ({ gameId }) => {
-  switch (gameId) {
+  const gameData = getGameById(gameId);
+  if (gameData?.component) {
+     // This relies on the component property in gamesData correctly pointing to the game or ComingSoon
+    const GameComponent = lazy(gameData.component);
+    return <GameComponent />;
+  }
+  switch (gameId) { // Fallback, ideally component from gamesData is always used
     case 'tictactoe':
       return <TicTacToe />;
     case 'memorymatch':
@@ -43,6 +53,7 @@ const GameLoader: React.FC<{ gameId: string }> = ({ gameId }) => {
       return <Game2048 />;
     case 'nim':
       return <NimGame />;
+    // For new games like hangman, connectfour, they will be handled by ComingSoon via gamesData
     default:
       return <ComingSoon />;
   }
@@ -52,9 +63,18 @@ const HowToPlayContentProvider: React.FC<{ gameId: string }> = ({ gameId }) => {
   switch (gameId) {
     case 'nim':
       return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructionsNim /></Suspense>;
-    // TODO: Add cases for other games here once their instruction components are created
-    // case 'tictactoe':
-    //   return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructionsTicTacToe /></Suspense>;
+    case 'tictactoe':
+      return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructionsTicTacToe /></Suspense>;
+    case 'memorymatch':
+      return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructionsMemoryMatch /></Suspense>;
+    case 'game2048':
+      return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructions2048 /></Suspense>;
+    case 'hangman': // Placeholder for Hangman
+      return <p className="italic text-muted-foreground">Detailed instructions for Hangman are coming soon!</p>;
+    case 'connectfour': // Placeholder for Connect Four
+      return <p className="italic text-muted-foreground">Detailed instructions for Connect Four are coming soon!</p>;
+    // Sudoku is isAvailable:false, so it won't typically reach here unless directly navigated to.
+    // We can add a case for it if needed, or rely on the default.
     default:
       return <p className="italic text-muted-foreground">Detailed instructions for this game are coming soon!</p>;
   }
@@ -85,7 +105,7 @@ const GameWrapper: React.FC = () => {
   
   if (!game) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background">
         <NavBar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -108,28 +128,28 @@ const GameWrapper: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <NavBar />
-      <main className="flex-1 container p-4">
-        <div className="mb-6 flex items-center justify-between">
+      <main className="flex-1 container mx-auto p-4 flex flex-col">
+        <div className="mb-6 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
-            <Button variant="outline" size="sm" className="mr-4" onClick={() => navigate('/')}>
-              <ArrowLeft className="mr-1 h-4 w-4" />
-              Back
+            <Button variant="outline" size="icon" className="mr-4 h-10 w-10" onClick={() => navigate('/')}>
+              <ArrowLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">{game.name}</h1>
-              <p className="text-muted-foreground text-sm">{game.description}</p>
+              <h1 className="text-2xl md:text-3xl font-bold">{game.name}</h1>
+              {/* Game description is now in the modal, so removed from here if it existed */}
             </div>
           </div>
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" className="h-10 w-10">
                 <SettingsIcon className="h-5 w-5" />
                 <span className="sr-only">Game Settings & Info</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-md">
               <GameSettingsModal
                 game={game}
                 difficulty={difficulty}
@@ -144,11 +164,9 @@ const GameWrapper: React.FC = () => {
           </Dialog>
         </div>
         
-        {/* Game area (now takes full width available in the grid) */}
-        {/* The grid is removed as the sidebar is gone, game takes full width */}
-        <Card className="p-0 overflow-auto h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)]"> {/* Adjusted height */}
+        <Card className="p-0 overflow-hidden flex-grow flex flex-col"> {/* Ensure card grows and allows internal scrolling if game needs it */}
           <Suspense fallback={<GameLoading />}>
-            <GameLoader gameId={game.id} />
+            {gameId && <GameLoader gameId={gameId} />}
           </Suspense>
         </Card>
       </main>

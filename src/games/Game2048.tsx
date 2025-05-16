@@ -3,11 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { useGameContext } from '@/contexts/GameContext';
-import { GameDifficulty } from '@/types'; // GameDifficulty is used in dispatch
+import { GameDifficulty } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { HelpCircle } from 'lucide-react';
 
 const Game2048: React.FC = () => {
   const { state: gameContextState, dispatch } = useGameContext();
   const { activeProfileId } = gameContextState;
+  const isMobile = useIsMobile();
   
   // Game state
   const [board, setBoard] = useState<number[][]>(Array(4).fill(0).map(() => Array(4).fill(0)));
@@ -287,10 +290,10 @@ const Game2048: React.FC = () => {
   
   // Get font size for tile based on its value
   const getTileTextSize = (value: number) => {
-    if (value === 0) return 'text-lg sm:text-xl';         // e.g., 18px base, 20px on sm+
-    if (value < 100) return 'text-xl sm:text-3xl';       // e.g., 20px base, 30px on sm+
-    if (value < 1000) return 'text-lg sm:text-2xl';      // e.g., 18px base, 24px on sm+
-    return 'text-base sm:text-xl';                       // e.g., 16px base, 20px on sm+
+    if (value === 0) return 'text-xl';
+    if (value < 100) return 'text-3xl sm:text-4xl';
+    if (value < 1000) return 'text-2xl sm:text-3xl';
+    return 'text-xl sm:text-2xl';
   };
   
   return (
@@ -299,7 +302,7 @@ const Game2048: React.FC = () => {
     // assuming this component itself is meant to be self-contained within its allocated height.
     // The `h-full` means it will respect the height given by its parent.
     <div 
-      className="flex flex-col h-full p-2 sm:p-4 overflow-hidden"
+      className="flex flex-col h-full p-2 sm:p-4 overflow-hidden max-h-fit"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -326,13 +329,8 @@ const Game2048: React.FC = () => {
         // preventing it from pushing the parent (the root div of Game2048) to overflow.
         className="flex-grow flex items-center justify-center p-1 min-h-0" 
       >
-        {/* Board Container: Reduced base padding for mobile (p-1), sm screens use p-1.5 */}
-        <div className={`
-          w-full h-full 
-          max-w-[400px] sm:max-w-[480px] 
-          max-h-[400px] sm:max-h-[480px]
-          aspect-square bg-muted/70 dark:bg-muted/30 p-1 sm:p-1.5 rounded-lg shadow-lg`}>
-          <div className="grid grid-cols-4 grid-rows-4 gap-1 sm:gap-1.5 h-full rounded-md overflow-hidden">
+        <div className="w-full max-w-[400px] sm:max-w-[480px] aspect-square bg-muted/70 dark:bg-muted/30 p-1.5 sm:p-2 rounded-lg shadow-lg">
+          <div className="grid grid-cols-4 grid-rows-4 gap-1.5 sm:gap-2 h-full rounded-md overflow-hidden">
             {board.flat().map((value, index) => (
               <div
                 key={index}

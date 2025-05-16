@@ -1,21 +1,21 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { HelpCircle } from 'lucide-react'; // Import HelpCircle
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import GameInstructions from './GameInstructions'; // To display inside the dialog
+// HelpCircle, Dialog components are no longer needed here if we remove the specific "How to Play" dialog
+// import { HelpCircle } from 'lucide-react'; 
+// import {
+//   Dialog,
+//   DialogContent,
+//   DialogHeader,
+//   DialogTitle,
+//   DialogTrigger,
+//   DialogFooter,
+//   DialogClose,
+// } from "@/components/ui/dialog";
+// import GameInstructions from './GameInstructions'; // No longer rendered directly here
 
 interface GameHeaderProps {
   onRestart: () => void;
-  // onToggleInstructions is no longer needed here as the dialog handles its own state
 }
 
 const GameHeader: React.FC<GameHeaderProps> = ({
@@ -32,26 +32,8 @@ const GameHeader: React.FC<GameHeaderProps> = ({
       <div className="flex flex-col gap-2 items-end">
         <div className="flex gap-2">
           <Button onClick={onRestart} size="sm" variant="outline">Restart</Button>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                <HelpCircle className="mr-1 h-4 w-4" />
-                How to Play
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>How to Play Nim</DialogTitle>
-              </DialogHeader>
-              {/* GameInstructions will be rendered here. It might need adjustments. */}
-              <GameInstructions />
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button type="button" variant="secondary">Got it!</Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {/* The "How to Play" button and its Dialog has been removed. */}
+          {/* Instructions are now in the main settings modal accessed from GameWrapper. */}
         </div>
       </div>
     </div>
@@ -59,4 +41,3 @@ const GameHeader: React.FC<GameHeaderProps> = ({
 };
 
 export default GameHeader;
-

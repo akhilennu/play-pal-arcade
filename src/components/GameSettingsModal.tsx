@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,9 +8,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { User, Users, Volume2, VolumeX, Info, Puzzle, Users2, ShieldQuestion } from 'lucide-react'; // Added Info, Puzzle, Users2, ShieldQuestion
+import { User, Users, Volume2, VolumeX, Info, Puzzle, Users2, ShieldQuestion, HelpCircle } from 'lucide-react'; // Added HelpCircle
 import { GameDifficulty, Game } from '@/types';
-import { Badge } from '@/components/ui/badge'; // Added Badge import
+import { Badge } from '@/components/ui/badge';
 
 interface GameSettingsModalProps {
   game: Game | null;
@@ -21,6 +20,7 @@ interface GameSettingsModalProps {
   onDifficultyChange: (value: GameDifficulty) => void;
   onMultiplayerChange: (value: boolean) => void;
   onSoundToggle: () => void;
+  howToPlayContent?: React.ReactNode; // New prop
 }
 
 const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
@@ -31,6 +31,7 @@ const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   onDifficultyChange,
   onMultiplayerChange,
   onSoundToggle,
+  howToPlayContent, // Destructure new prop
 }) => {
   if (!game) return null;
 
@@ -43,8 +44,8 @@ const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
         </DialogDescription>
       </DialogHeader>
       
-      <div className="py-4 space-y-6"> {/* Increased spacing */}
-        {/* Game Info Section */}
+      <div className="py-4 space-y-6">
+        {/* Game Information Section (metadata) */}
         <div>
           <h4 className="text-md font-medium mb-2 flex items-center">
             <Info className="mr-2 h-5 w-5 text-primary" />
@@ -71,6 +72,19 @@ const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
             )}
           </div>
         </div>
+
+        {/* How to Play Section */}
+        {howToPlayContent && (
+          <div>
+            <h4 className="text-md font-medium mb-2 flex items-center">
+              <HelpCircle className="mr-2 h-5 w-5 text-primary" />
+              How to Play
+            </h4>
+            <div className="text-sm pl-2 border-l-2 border-muted prose prose-sm dark:prose-invert max-w-none">
+              {howToPlayContent}
+            </div>
+          </div>
+        )}
 
         {/* Difficulty selector */}
         {game.availableDifficulties.length > 1 && (

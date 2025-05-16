@@ -120,13 +120,15 @@ const NimGame: React.FC = () => {
       />
       
       <Card className="flex-grow flex flex-col p-4">
-        {/* Game Status */}
-        <GameStatus 
-          gameOver={gameOver}
-          winner={winner}
-          currentPlayer={currentPlayer}
-          isMultiplayer={isMultiplayer}
-        />
+        {/* Game Status with added vertical margin */}
+        <div className="my-4 sm:my-6">
+          <GameStatus 
+            gameOver={gameOver}
+            winner={winner}
+            currentPlayer={currentPlayer}
+            isMultiplayer={isMultiplayer}
+          />
+        </div>
         
         {/* Piles Display */}
         <div className="flex-1 flex items-center justify-around flex-wrap">

@@ -11,7 +11,7 @@ import {
 import NavBar from '@/components/NavBar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft, Settings as SettingsIcon, HelpCircle } from 'lucide-react';
 import { getGameById } from '@/data/gamesData';
 import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty } from '@/types';
@@ -30,6 +30,9 @@ const Game2048 = lazy(() => import('@/games/Game2048'));
 const NimGame = lazy(() => import('@/games/NimGame'));
 const ComingSoon = lazy(() => import('@/components/ComingSoon'));
 
+// Import Nim instructions (and others as they are created)
+const GameInstructionsNim = lazy(() => import('@/games/nim/GameInstructions'));
+
 const GameLoader: React.FC<{ gameId: string }> = ({ gameId }) => {
   switch (gameId) {
     case 'tictactoe':
@@ -42,6 +45,18 @@ const GameLoader: React.FC<{ gameId: string }> = ({ gameId }) => {
       return <NimGame />;
     default:
       return <ComingSoon />;
+  }
+};
+
+const HowToPlayContentProvider: React.FC<{ gameId: string }> = ({ gameId }) => {
+  switch (gameId) {
+    case 'nim':
+      return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructionsNim /></Suspense>;
+    // TODO: Add cases for other games here once their instruction components are created
+    // case 'tictactoe':
+    //   return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructionsTicTacToe /></Suspense>;
+    default:
+      return <p className="italic text-muted-foreground">Detailed instructions for this game are coming soon!</p>;
   }
 };
 
@@ -123,6 +138,7 @@ const GameWrapper: React.FC = () => {
                 onDifficultyChange={handleDifficultyChange}
                 onMultiplayerChange={handleMultiplayerChange}
                 onSoundToggle={toggleSound}
+                howToPlayContent={<HowToPlayContentProvider gameId={game.id} />}
               />
             </DialogContent>
           </Dialog>

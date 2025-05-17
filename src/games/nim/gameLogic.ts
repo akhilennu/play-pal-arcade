@@ -1,13 +1,24 @@
-
 import { toast } from '@/components/ui/use-toast';
 import { GameDifficulty } from '@/types';
 import { SoundType } from '@/hooks/use-sound-effects';
 import { getAIMove } from './qlearning';
 
+// Generate random piles for the game
+export const generateRandomPiles = (): number[] => {
+  const numPiles = Math.random() < 0.5 ? 3 : 4; // 50% chance for 3 piles, 50% for 4
+  const piles: number[] = [];
+  for (let i = 0; i < numPiles; i++) {
+    // Random integer between 1 and 10 (inclusive)
+    const stones = Math.floor(Math.random() * 10) + 1;
+    piles.push(stones);
+  }
+  return piles;
+};
+
 // Initialize or reset game
 export const initializeGame = () => {
   return {
-    piles: [3, 4, 5],
+    piles: generateRandomPiles(), // Use the new random pile generator
     currentPlayer: 1 as 1 | 2,
     selectedPile: null as number | null,
     selectedCount: 0,

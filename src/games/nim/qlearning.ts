@@ -1,5 +1,6 @@
-
 import { toast } from "@/components/ui/use-toast";
+// Import the new pile generation function
+import { generateRandomPiles } from './gameLogic'; 
 
 // Type definitions for our Q-learning implementation
 export interface NimState {
@@ -65,7 +66,11 @@ export const chooseAction = (
   
   // If no valid actions, return a default (should never happen in Nim)
   if (validActions.length === 0) {
-    return { pileIndex: 0, count: 0 };
+    // This case should ideally not be reached if isGameOver is checked before calling chooseAction
+    // For safety, let's return a placeholder or handle error appropriately.
+    // For now, returning an invalid action that will likely be caught or ignored.
+    console.warn("chooseAction called with no valid actions for state:", state);
+    return { pileIndex: -1, count: -1 }; // Indicates an issue
   }
   
   // Exploration: choose a random action with probability epsilon
@@ -76,18 +81,19 @@ export const chooseAction = (
   // Exploitation: choose the best action
   const stateQValues = qTable.get(stateKey);
   
-  // If state not in Q-table, choose randomly
+  // If state not in Q-table, choose randomly (or among best unvisited actions)
   if (!stateQValues) {
+    // Fallback to random if state is new and not exploring
     return validActions[Math.floor(Math.random() * validActions.length)];
   }
   
   // Find the action with the highest Q-value
-  let bestAction = validActions[0];
+  let bestAction = validActions[0]; // Initialize with the first valid action
   let bestValue = -Infinity;
   
   validActions.forEach(action => {
     const actionKey = actionToString(action);
-    const qValue = stateQValues.get(actionKey) || 0;
+    const qValue = stateQValues.get(actionKey) || 0; // Default to 0 if action not in Q-table for this state
     if (qValue > bestValue) {
       bestValue = qValue;
       bestAction = action;
@@ -103,7 +109,7 @@ export const getMaxQValue = (state: NimState, qTable: QTable): number => {
   const stateQValues = qTable.get(stateKey);
   
   if (!stateQValues || stateQValues.size === 0) {
-    return 0;
+    return 0; // No known Q-values for this state, optimistic default is 0
   }
   
   let maxQValue = -Infinity;
@@ -111,6 +117,7 @@ export const getMaxQValue = (state: NimState, qTable: QTable): number => {
     maxQValue = Math.max(maxQValue, qValue);
   });
   
+  // If all Q-values are -Infinity (e.g., uninitialized), return 0. Otherwise, return the actual max.
   return maxQValue === -Infinity ? 0 : maxQValue;
 };
 
@@ -132,10 +139,11 @@ export const updateQValue = (
   
   // Get current Q-value
   const stateQValues = qTable.get(stateKey)!;
-  const currentQValue = stateQValues.get(actionKey) || 0;
+  const currentQValue = stateQValues.get(actionKey) || 0; // Default to 0 if action not seen before for this state
   
   // Calculate new Q-value
-  const maxNextQValue = getMaxQValue(nextState, qTable);
+  // If nextState is terminal, maxNextQValue is 0.
+  const maxNextQValue = isGameOver(nextState) ? 0 : getMaxQValue(nextState, qTable);
   const newQValue = currentQValue + ALPHA * (reward + GAMMA * maxNextQValue - currentQValue);
   
   // Update Q-table
@@ -154,38 +162,51 @@ export const trainAgent = (): QTable => {
   
   // Run training episodes
   for (let episode = 0; episode < EPISODES; episode++) {
-    // Initialize game
-    let state: NimState = { piles: [3, 4, 5] };
-    let player = 1; // Player 1 starts
+    // Initialize game with random piles
+    let state: NimState = { piles: generateRandomPiles() };
+    let player = 1; // Player 1 (human/opponent) starts, AI is player 2 for reward calculation
     
     // Play until game over
     while (!isGameOver(state)) {
-      // Choose action using epsilon-greedy
+      // Choose action using epsilon-greedy (AI is effectively playing against itself or an epsilon-greedy version of itself)
       const action = chooseAction(state, qTable, EPSILON);
+      // Ensure action is valid (e.g. if chooseAction returned a placeholder for no valid actions)
+      if (action.pileIndex === -1) {
+          // This should not happen if isGameOver is checked, but as a safeguard:
+          console.error("Invalid action chosen during training, breaking episode.", state);
+          break; 
+      }
       
       // Take action
       const nextState = getNextState(state, action);
       
       // Determine reward
-      let reward = 0;
+      let reward = 0; // Default reward for non-terminal moves
       if (isGameOver(nextState)) {
-        // Game over - player who took the last stone loses
-        reward = player === 1 ? -1 : 1;  // AI (player 2) wants to win
+        // Game over. The player who made the move that emptied the piles causes the *other* player to win.
+        // In Nim, the player who takes the last stone LOSES.
+        // So, if 'player' (the one who just made 'action') makes the game end, 'player' loses.
+        // The Q-value update is from the perspective of the current 'player'.
+        // If current 'player' makes a move to a terminal state where they lose, reward is -1.
+        // If they make a move to a terminal state where they win (opponent took last stone), reward is +1.
+        // Standard Nim: player taking last stone loses.
+        // If player (who took action) makes sum = 0, player loses.
+        reward = -1; // Player who made the move to an empty state (took last stone) loses.
       }
       
-      // Update Q-table
+      // Update Q-table: we update the Q-value for the (state, action) pair taken by 'player'
       updateQValue(qTable, state, action, reward, nextState);
       
       // Update state
       state = nextState;
       
-      // Switch player
+      // Switch player (not strictly necessary for Q-learning if AI plays both sides, but helps conceptualize)
       player = player === 1 ? 2 : 1;
     }
     
     // Log progress occasionally
-    if (episode % 1000 === 0) {
-      console.log(`Completed ${episode} training episodes`);
+    if (episode > 0 && episode % (EPISODES / 10) === 0) { // Log 10 times during training
+      console.log(`Completed ${episode} training episodes (${(episode/EPISODES)*100}%)`);
     }
   }
   
@@ -296,19 +317,18 @@ export const importQTable = (json: string): QTable | null => {
 // Get an AI move using the trained Q-table
 export const getAIMove = (piles: number[]): NimAction => {
   // Load Q-table
-  const qTable = loadQTable();
+  let qTable = loadQTable(); // Changed to let
   
   // If Q-table is empty, train it
   if (qTable.size === 0) {
     toast({
       title: "Training AI",
-      description: "First run detected. Training AI model...",
+      description: "First run or no saved model. Training AI model...",
     });
-    const trainedQTable = trainAgent();
-    saveQTable(trainedQTable);
-    return chooseAction({ piles }, trainedQTable);
+    qTable = trainAgent(); // Reassign to qTable
+    saveQTable(qTable);
   }
   
-  // Use loaded Q-table to choose action
-  return chooseAction({ piles }, qTable);
+  // Use loaded Q-table to choose action (epsilon = 0 for exploitation during play)
+  return chooseAction({ piles }, qTable, 0);
 };

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { useGameContext } from '@/contexts/GameContext';
 import { SoundType, useSoundEffects } from '@/hooks/use-sound-effects';
@@ -10,6 +10,7 @@ import GameOverMessage from './nim/GameOverMessage';
 import GameHeader from './nim/GameHeader';
 import GameStatus from './nim/GameStatus';
 import { initializeGame, calculateAIMove, removeStones } from './nim/gameLogic';
+import { trainAgent, saveQTable } from './nim/qlearning';
 
 const NimGame: React.FC = () => {
   const { state, dispatch } = useGameContext();
@@ -22,24 +23,41 @@ const NimGame: React.FC = () => {
   const [selectedCount, setSelectedCount] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<1 | 2 | null>(null);
+  const [aiThinking, setAiThinking] = useState(false);
   const isMultiplayer = gameSettings.isMultiplayer;
   
+  // Train AI on component mount if needed
   useEffect(() => {
-    if (!isMultiplayer && currentPlayer === 2 && !gameOver) {
-      const timeoutId = setTimeout(() => {
-        makeAIMove();
-      }, 1000);
-      return () => clearTimeout(timeoutId);
+    // Check if we're in localStorage to avoid unnecessary training in dev mode
+    if (typeof localStorage !== 'undefined' && !localStorage.getItem('nim-qtable')) {
+      console.log('Training AI model on first load...');
+      const qTable = trainAgent();
+      saveQTable(qTable);
     }
-  }, [currentPlayer, gameOver, isMultiplayer, piles]); // Added piles to dependency array for AI
+  }, []);
   
-  const makeAIMove = () => {
-    const aiMove = calculateAIMove(piles);
-    if (aiMove) {
-      // AI directly removes stones, no intermediate selection state needed for AI
-      handleRemoveStonesInternal(aiMove.pileIndex, aiMove.count);
+  // AI move handler with useCallback to avoid re-creations
+  const makeAIMove = useCallback(() => {
+    if (isMultiplayer || gameOver) return;
+    
+    setAiThinking(true);
+    
+    // Add a small delay to simulate "thinking"
+    setTimeout(() => {
+      const aiMove = calculateAIMove(piles, gameSettings.difficulty);
+      if (aiMove) {
+        handleRemoveStonesInternal(aiMove.pileIndex, aiMove.count);
+      }
+      setAiThinking(false);
+    }, 700);
+  }, [piles, gameOver, isMultiplayer, gameSettings.difficulty]);
+  
+  // AI turn handler
+  useEffect(() => {
+    if (!isMultiplayer && currentPlayer === 2 && !gameOver && !aiThinking) {
+      makeAIMove();
     }
-  };
+  }, [currentPlayer, gameOver, isMultiplayer, makeAIMove, aiThinking]);
   
   const handleResetGame = () => {
     const initialState = initializeGame();
@@ -53,10 +71,11 @@ const NimGame: React.FC = () => {
   
   // Consolidated handler for when a player interacts with a pile (clicks a stone)
   const handlePileInteraction = (pileIndex: number, count: number) => {
-    if (gameOver || currentPlayer !== 1 || piles[pileIndex] === 0) return;
-
-    // If clicking a different pile, or the same pile but a different count
-    if (selectedPile !== pileIndex || selectedCount !== count) {
+    // Fix for multiplayer: Allow either player 1 or player 2 to select when it's their turn
+    // Instead of hardcoding currentPlayer !== 1
+    if (gameOver || piles[pileIndex] === 0) return;
+    
+    if ((isMultiplayer || currentPlayer === 1) && !aiThinking) {
       setSelectedPile(pileIndex);
       // Ensure count does not exceed stones in pile
       setSelectedCount(Math.min(count, piles[pileIndex])); 
@@ -88,7 +107,9 @@ const NimGame: React.FC = () => {
 
   // This function will be called by GameControls when the player confirms removal
   const playerConfirmRemoveStones = () => {
-    if (selectedPile === null || selectedCount <= 0 || currentPlayer !== 1 || gameOver) return;
+    if (selectedPile === null || selectedCount <= 0 || gameOver) return;
+    
+    // Fix for multiplayer: Allow either player to confirm removal when it's their turn
     handleRemoveStonesInternal(selectedPile, selectedCount);
   };
   
@@ -103,6 +124,7 @@ const NimGame: React.FC = () => {
             winner={winner}
             currentPlayer={currentPlayer}
             isMultiplayer={isMultiplayer}
+            aiThinking={aiThinking}
           />
         </div>
         
@@ -117,6 +139,8 @@ const NimGame: React.FC = () => {
               currentPlayer={currentPlayer}
               gameOver={gameOver}
               onPileInteraction={handlePileInteraction} // Use the new consolidated handler
+              isMultiplayer={isMultiplayer}
+              aiThinking={aiThinking}
             />
           ))}
         </div>
@@ -126,9 +150,10 @@ const NimGame: React.FC = () => {
           selectedCount={selectedCount}
           currentPlayer={currentPlayer}
           gameOver={gameOver}
-          piles={piles} // Pass piles to GameControls if it needs to know max stones
-          onRemoveStones={playerConfirmRemoveStones} // Pass the confirm removal handler
-          // onAdjustSelection is removed
+          piles={piles}
+          onRemoveStones={playerConfirmRemoveStones}
+          isMultiplayer={isMultiplayer}
+          aiThinking={aiThinking}
         />
         
         <GameOverMessage

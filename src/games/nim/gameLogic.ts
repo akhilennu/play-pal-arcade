@@ -2,6 +2,7 @@
 import { toast } from '@/components/ui/use-toast';
 import { GameDifficulty } from '@/types';
 import { SoundType } from '@/hooks/use-sound-effects';
+import { getAIMove } from './qlearning';
 
 // Initialize or reset game
 export const initializeGame = () => {
@@ -15,9 +16,19 @@ export const initializeGame = () => {
   };
 };
 
-// Make AI move
-export const calculateAIMove = (piles: number[]) => {
-  // Find non-empty pile
+// Make AI move based on difficulty
+export const calculateAIMove = (piles: number[], difficulty: GameDifficulty) => {
+  if (difficulty === GameDifficulty.HARD) {
+    // Use Q-learning AI for hard difficulty
+    return getAIMove(piles);
+  } else if (difficulty === GameDifficulty.MEDIUM) {
+    // For medium difficulty: 70% Q-learning, 30% random
+    if (Math.random() < 0.7) {
+      return getAIMove(piles);
+    }
+  }
+  
+  // Random move for EASY difficulty or fallback
   const nonEmptyPileIndices = piles
     .map((count, index) => ({ count, index }))
     .filter(pile => pile.count > 0);

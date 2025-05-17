@@ -2,16 +2,17 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, MinusCircle, PlusCircle } from 'lucide-react'; // MinusCircle and PlusCircle might not be needed
+import { CheckCircle } from 'lucide-react';
 
 interface GameControlsProps {
   selectedPile: number | null;
   selectedCount: number;
   currentPlayer: 1 | 2;
   gameOver: boolean;
-  piles: number[]; // Keep if needed for validation, though count is already validated in NimGame
+  piles: number[];
   onRemoveStones: () => void;
-  // onAdjustSelection is removed
+  isMultiplayer?: boolean;
+  aiThinking?: boolean;
 }
 
 const GameControls: React.FC<GameControlsProps> = ({
@@ -19,11 +20,17 @@ const GameControls: React.FC<GameControlsProps> = ({
   selectedCount,
   currentPlayer,
   gameOver,
-  piles, // piles might not be strictly needed here if selectedCount is always valid
-  onRemoveStones
+  piles,
+  onRemoveStones,
+  isMultiplayer = false,
+  aiThinking = false
 }) => {
-  // Show controls only if it's player 1's turn, game is not over, and a pile is selected with some stones
-  const canShowControls = selectedPile !== null && selectedCount > 0 && currentPlayer === 1 && !gameOver;
+  // Fix for multiplayer: Allow controls for either player when it's their turn in multiplayer mode
+  const canShowControls = selectedPile !== null && 
+                         selectedCount > 0 && 
+                         !gameOver && 
+                         !aiThinking &&
+                         (isMultiplayer || currentPlayer === 1);
 
   if (!canShowControls) {
     return <div className="h-16 sm:h-20"></div>; // Placeholder for consistent height when controls are hidden
@@ -38,15 +45,13 @@ const GameControls: React.FC<GameControlsProps> = ({
         <Badge variant="secondary" className="text-sm sm:text-base px-2 py-0.5 sm:px-2.5">
           {selectedCount} stone{selectedCount > 1 ? 's' : ''}
         </Badge>
-        {/* <span className="text-muted-foreground hidden sm:inline">to remove</span> */}
       </div>
       <div className="flex w-full justify-center">
-        {/* Remove "Decrease" and "Increase" buttons */}
         <Button 
-          size="sm" // Consider 'default' size for better touch target on mobile
+          size="sm"
           className="w-full sm:w-auto sm:flex-none sm:px-6 bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={onRemoveStones}
-          disabled={selectedCount === 0 || selectedCount > pileStonesAvailable} // Disable if nothing selected or trying to remove more than available
+          disabled={selectedCount === 0 || selectedCount > pileStonesAvailable}
           aria-label={`Remove ${selectedCount} stone${selectedCount > 1 ? 's' : ''} from Pile ${selectedPile + 1}`}
         >
           <CheckCircle className="h-4 w-4 sm:mr-1.5" />

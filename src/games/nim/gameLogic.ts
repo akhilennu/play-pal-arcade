@@ -5,7 +5,7 @@ import { getAIMove } from './qlearning';
 
 // Generate random piles for the game
 export const generateRandomPiles = (): number[] => {
-  const numPiles = Math.random() < 0.5 ? 3 : 4; // 50% chance for 3 piles, 50% for 4
+  const numPiles = Math.random() < 0.25 ? 3 : 4; // 25% chance for 3 piles, 75% for 4
   const piles: number[] = [];
   for (let i = 0; i < numPiles; i++) {
     // Random integer between 1 and 10 (inclusive)

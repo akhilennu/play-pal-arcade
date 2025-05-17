@@ -1,5 +1,4 @@
-
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
@@ -86,13 +85,29 @@ const GameWrapper: React.FC = () => {
   const { state, dispatch } = useGameContext();
   const game = gameId ? getGameById(gameId) : null;
   
+  // Initialize difficulty state. Fallback to context's difficulty if game is not yet loaded,
+  // then useEffect will set it to the game's default.
   const [difficulty, setDifficulty] = React.useState<GameDifficulty>(
-    state.gameSettings.difficulty
+    game ? game.defaultDifficulty : state.gameSettings.difficulty
   );
   const [isMultiplayer, setIsMultiplayer] = React.useState<boolean>(
     state.gameSettings.isMultiplayer
   );
-  
+
+  useEffect(() => {
+    if (game) {
+      // When the game data is available (or changes), set the difficulty
+      // to this game's defined default difficulty.
+      const gameDefaultDifficulty = game.defaultDifficulty;
+      setDifficulty(gameDefaultDifficulty);
+      // Also dispatch this to the global game context so the settings modal
+      // and other parts of the app are aware of the current game's effective difficulty.
+      if (state.gameSettings.difficulty !== gameDefaultDifficulty) {
+        dispatch({ type: 'SET_DIFFICULTY', payload: gameDefaultDifficulty });
+      }
+    }
+  }, [game, dispatch, state.gameSettings.difficulty]); // Rerun if game object changes or context difficulty changes externally
+
   const toggleSound = () => {
     dispatch({ type: "TOGGLE_SOUND", payload: !state.soundEnabled });
   };

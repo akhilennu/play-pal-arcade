@@ -13,6 +13,7 @@ export const games: Game[] = [
       GameDifficulty.MEDIUM,
       GameDifficulty.HARD
     ],
+    defaultDifficulty: GameDifficulty.HARD, // Default to HARD
     supportsMultiplayer: true,
     category: "classic",
     isAvailable: true
@@ -28,6 +29,7 @@ export const games: Game[] = [
       GameDifficulty.MEDIUM,
       GameDifficulty.HARD
     ],
+    defaultDifficulty: GameDifficulty.MEDIUM, // Default to MEDIUM as requested
     supportsMultiplayer: false,
     category: "classic",
     isAvailable: true
@@ -41,6 +43,7 @@ export const games: Game[] = [
     availableDifficulties: [
       GameDifficulty.EASY
     ],
+    defaultDifficulty: GameDifficulty.EASY, // Default to EASY (only one available)
     supportsMultiplayer: false,
     category: "puzzle",
     isAvailable: true
@@ -56,6 +59,7 @@ export const games: Game[] = [
       GameDifficulty.MEDIUM,
       GameDifficulty.HARD
     ],
+    defaultDifficulty: GameDifficulty.HARD, // Default to HARD
     supportsMultiplayer: true,
     category: "strategy",
     isAvailable: true
@@ -71,6 +75,7 @@ export const games: Game[] = [
       GameDifficulty.MEDIUM,
       GameDifficulty.HARD
     ],
+    defaultDifficulty: GameDifficulty.HARD, // Default to HARD
     supportsMultiplayer: false,
     category: "puzzle",
     isAvailable: false
@@ -84,6 +89,7 @@ export const games: Game[] = [
     availableDifficulties: [
       GameDifficulty.MEDIUM
     ],
+    defaultDifficulty: GameDifficulty.MEDIUM, // Default to MEDIUM (only one available)
     supportsMultiplayer: true,
     category: "strategy",
     isAvailable: false
@@ -99,6 +105,7 @@ export const games: Game[] = [
       GameDifficulty.MEDIUM,
       GameDifficulty.HARD
     ],
+    defaultDifficulty: GameDifficulty.HARD, // Default to HARD
     supportsMultiplayer: false,
     category: "casual",
     isAvailable: false

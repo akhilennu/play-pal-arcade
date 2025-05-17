@@ -16,9 +16,9 @@ export type QTable = Map<string, Map<string, number>>;
 
 // Constants for Q-learning
 const ALPHA = 0.1; // Learning rate
-const GAMMA = 0.9; // Discount factor
-const EPSILON = 0.1; // Exploration rate for training
-const EPISODES = 10000; // Number of training episodes
+const GAMMA = 0.99; // Discount factor
+const EPSILON = 0.2; // Exploration rate for training
+const EPISODES = 50000; // Number of training episodes
 const STORAGE_KEY = "nim-qtable"; // localStorage key
 
 // Convert a state (pile configuration) to a string key
@@ -143,8 +143,12 @@ export const updateQValue = (
   
   // Calculate new Q-value
   // If nextState is terminal, maxNextQValue is 0.
+  // maxNextQValue represents the maximum value the *opponent* can achieve from nextState,
+  // as it will be their turn.
   const maxNextQValue = isGameOver(nextState) ? 0 : getMaxQValue(nextState, qTable);
-  const newQValue = currentQValue + ALPHA * (reward + GAMMA * maxNextQValue - currentQValue);
+  // For the current player, the value of nextState is the negative of the opponent's best outcome.
+  // So, we use -maxNextQValue in the update rule for the current player's Q-value.
+  const newQValue = currentQValue + ALPHA * (reward + GAMMA * (-maxNextQValue) - currentQValue);
   
   // Update Q-table
   stateQValues.set(actionKey, newQValue);

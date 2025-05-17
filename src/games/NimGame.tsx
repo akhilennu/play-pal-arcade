@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { useGameContext } from '@/contexts/GameContext';
 import { SoundType, useSoundEffects } from '@/hooks/use-sound-effects';
 
-// Import the new components
 import PileComponent from './nim/PileComponent';
 import GameControls from './nim/GameControls';
 import GameOverMessage from './nim/GameOverMessage';
@@ -16,87 +16,61 @@ const NimGame: React.FC = () => {
   const { activeProfileId, gameSettings } = state;
   const { play } = useSoundEffects();
   
-  // Game state
-  const [piles, setPiles] = useState<number[]>([3, 4, 5]); // Default pile sizes
-  const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1); // Player 1 starts
+  const [piles, setPiles] = useState<number[]>([3, 4, 5]);
+  const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1);
   const [selectedPile, setSelectedPile] = useState<number | null>(null);
   const [selectedCount, setSelectedCount] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<1 | 2 | null>(null);
   const isMultiplayer = gameSettings.isMultiplayer;
   
-  // Set up AI turn if needed
   useEffect(() => {
     if (!isMultiplayer && currentPlayer === 2 && !gameOver) {
-      // Add a delay to make the AI move feel more natural
       const timeoutId = setTimeout(() => {
         makeAIMove();
       }, 1000);
-      
       return () => clearTimeout(timeoutId);
     }
-  }, [currentPlayer, gameOver, isMultiplayer]);
+  }, [currentPlayer, gameOver, isMultiplayer, piles]); // Added piles to dependency array for AI
   
-  // AI move logic
   const makeAIMove = () => {
     const aiMove = calculateAIMove(piles);
     if (aiMove) {
-      handleRemoveStones(aiMove.pileIndex, aiMove.count);
+      // AI directly removes stones, no intermediate selection state needed for AI
+      handleRemoveStonesInternal(aiMove.pileIndex, aiMove.count);
     }
   };
   
-  // Reset game state
   const handleResetGame = () => {
-    const { piles, currentPlayer, selectedPile, selectedCount, gameOver, winner } = initializeGame();
-    setPiles(piles);
-    setCurrentPlayer(currentPlayer);
-    setSelectedPile(selectedPile);
-    setSelectedCount(selectedCount);
-    setGameOver(gameOver);
-    setWinner(winner);
+    const initialState = initializeGame();
+    setPiles(initialState.piles);
+    setCurrentPlayer(initialState.currentPlayer);
+    setSelectedPile(initialState.selectedPile);
+    setSelectedCount(initialState.selectedCount);
+    setGameOver(initialState.gameOver);
+    setWinner(initialState.winner);
   };
   
-  // Handle pile selection
-  const handleSelectPile = (pileIndex: number) => {
-    if (gameOver) return;
-    
-    // Can only select non-empty piles
-    if (piles[pileIndex] === 0) return;
-    
-    setSelectedPile(pileIndex);
-    setSelectedCount(1); // Start with selecting 1 stone
-    play(SoundType.CLICK);
-  };
-  
-  // Handle stone selection (increase/decrease)
-  const handleAdjustSelection = (amount: number) => {
-    if (selectedPile === null) return;
-    
-    const newCount = selectedCount + amount;
-    if (newCount >= 1 && newCount <= piles[selectedPile]) {
-      setSelectedCount(newCount);
+  // Consolidated handler for when a player interacts with a pile (clicks a stone)
+  const handlePileInteraction = (pileIndex: number, count: number) => {
+    if (gameOver || currentPlayer !== 1 || piles[pileIndex] === 0) return;
+
+    // If clicking a different pile, or the same pile but a different count
+    if (selectedPile !== pileIndex || selectedCount !== count) {
+      setSelectedPile(pileIndex);
+      // Ensure count does not exceed stones in pile
+      setSelectedCount(Math.min(count, piles[pileIndex])); 
       play(SoundType.CLICK);
     }
   };
   
-  // Handle selecting specific stone count directly
-  const handleSelectCount = (count: number) => {
-    if (selectedPile === null) return;
-    setSelectedCount(count);
-  };
-  
-  // Handle confirming stone removal
-  const handleRemoveStones = (pileIndex: number | null = null, count: number | null = null) => {
-    const finalPileIndex = pileIndex !== null ? pileIndex : selectedPile;
-    const finalCount = count !== null ? count : selectedCount;
-    
-    if (finalPileIndex === null || finalCount <= 0) return;
-    
-    const result = removeStones(
+  // Renamed to avoid conflict with the one passed to GameControls
+  const handleRemoveStonesInternal = (pileIdxToRemove: number, countToRemove: number) => {
+     const result = removeStones(
       piles, 
       currentPlayer, 
-      finalPileIndex, 
-      finalCount, 
+      pileIdxToRemove, 
+      countToRemove, 
       activeProfileId, 
       isMultiplayer, 
       gameSettings.difficulty,
@@ -108,20 +82,22 @@ const NimGame: React.FC = () => {
     setGameOver(result.gameOver);
     setWinner(result.winner);
     setCurrentPlayer(result.nextPlayer);
-    setSelectedPile(null);
+    setSelectedPile(null); // Reset selection after removing
     setSelectedCount(0);
+  };
+
+  // This function will be called by GameControls when the player confirms removal
+  const playerConfirmRemoveStones = () => {
+    if (selectedPile === null || selectedCount <= 0 || currentPlayer !== 1 || gameOver) return;
+    handleRemoveStonesInternal(selectedPile, selectedCount);
   };
   
   return (
-    <div className="flex flex-col h-full p-4">
-      {/* Game Header */}
-      <GameHeader 
-        onRestart={handleResetGame}
-      />
+    <div className="flex flex-col h-full p-2 sm:p-4">
+      <GameHeader onRestart={handleResetGame} />
       
-      <Card className="flex-grow flex flex-col p-4">
-        {/* Game Status with added vertical margin */}
-        <div className="my-4 sm:my-6">
+      <Card className="flex-grow flex flex-col p-2 sm:p-4">
+        <div className="my-2 sm:my-4"> {/* Reduced vertical margin for status */}
           <GameStatus 
             gameOver={gameOver}
             winner={winner}
@@ -130,36 +106,31 @@ const NimGame: React.FC = () => {
           />
         </div>
         
-        {/* Piles Display */}
-        <div className="flex-1 flex items-center justify-around flex-wrap">
+        <div className="flex-1 flex items-center justify-around flex-wrap gap-1 sm:gap-2"> {/* Added gap for spacing between piles */}
           {piles.map((pileSize, index) => (
-            <div key={index}>
-              <PileComponent
-                pileSize={pileSize}
-                pileIndex={index}
-                selectedPile={selectedPile}
-                selectedCount={selectedCount}
-                currentPlayer={currentPlayer}
-                gameOver={gameOver}
-                onSelectPile={handleSelectPile}
-                onSelectCount={handleSelectCount}
-              />
-            </div>
+            <PileComponent
+              key={index}
+              pileSize={pileSize}
+              pileIndex={index}
+              selectedPile={selectedPile}
+              selectedCount={selectedCount}
+              currentPlayer={currentPlayer}
+              gameOver={gameOver}
+              onPileInteraction={handlePileInteraction} // Use the new consolidated handler
+            />
           ))}
         </div>
         
-        {/* Game Controls */}
         <GameControls
           selectedPile={selectedPile}
           selectedCount={selectedCount}
           currentPlayer={currentPlayer}
           gameOver={gameOver}
-          piles={piles}
-          onAdjustSelection={handleAdjustSelection}
-          onRemoveStones={() => handleRemoveStones()}
+          piles={piles} // Pass piles to GameControls if it needs to know max stones
+          onRemoveStones={playerConfirmRemoveStones} // Pass the confirm removal handler
+          // onAdjustSelection is removed
         />
         
-        {/* Game Over Message */}
         <GameOverMessage
           gameOver={gameOver}
           winner={winner}

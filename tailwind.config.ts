@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -78,7 +77,12 @@ export default {
 					primary: '#F97316',
 					secondary: '#FDBA74',
 					accent: '#EA580C'
-				}
+				},
+        // Added vibrant colors for UI elements like badges
+        'vivid-purple': '#8B5CF6',
+        'magenta-pink': '#D946EF',
+        'bright-orange': '#F97316', // This was already similar to game2048.primary
+        'ocean-blue': '#0EA5E9',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

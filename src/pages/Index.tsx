@@ -1,10 +1,5 @@
+
 import React, { useState } from "react";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
 import { 
   Card, 
   CardContent, 
@@ -12,55 +7,26 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import NavBar from "@/components/NavBar";
 import GameCard from "@/components/GameCard";
-import { games, getAvailableGames } from "@/data/gamesData";
+import { games } from "@/data/gamesData"; // Only 'games' is needed now
 import { useGameContext } from "@/contexts/GameContext";
 import { createNewProfile } from "@/utils/userUtils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ChevronDown } from "lucide-react"; // For the static dropdown visual
 
 const Index: React.FC = () => {
   const { state, dispatch } = useGameContext();
   const [nameInput, setNameInput] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState(0);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [filter, setFilter] = useState<"all" | "available" | "multiplayer">("available");
 
-  // Get available games based on filter
-  const getFilteredGames = () => {
-    switch (filter) {
-      case "available":
-        return games.filter(game => game.isAvailable);
-      case "multiplayer":
-        return games.filter(game => game.supportsMultiplayer && game.isAvailable); // Show available multiplayer games
-      case "all":
-      default:
-        return games; // Show all games, including not available ones if filter is "all"
-    }
-  };
-  
-  const displayedGames = getFilteredGames();
+  // Get available games
+  const availableGames = games.filter(game => game.isAvailable);
+  const allGamesToDisplay = games; // For the "All Games" section if we want to show coming soon ones too
 
-  // Filter games by category from the displayedGames list
-  const getGamesForCategory = (category: string) => {
-    return displayedGames.filter(game => game.category === category);
-  };
-  
-  const puzzleGames = getGamesForCategory("puzzle");
-  const classicGames = getGamesForCategory("classic");
-  const casualGames = getGamesForCategory("casual");
-  const strategyGames = getGamesForCategory("strategy");
-  
   // Handle profile creation
   const handleCreateProfile = () => {
     if (!nameInput.trim()) return;
@@ -72,52 +38,59 @@ const Index: React.FC = () => {
     setNameInput("");
   };
 
-  // Common render function for game lists to avoid repetition
-  const renderGameList = (gamesToRender: typeof games) => (
-    <div className={`pb-8 ${viewMode === "grid" ? 
-      "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6" : 
-      "flex flex-col gap-4"}`}>
-      {gamesToRender.length > 0 ? gamesToRender.map(game => (
-        <GameCard key={game.id} game={game} />
-      )) : (
-        <p className="col-span-full text-center text-muted-foreground py-8">No games match your current filters in this category.</p>
+  // Common render function for game lists
+  const renderGameList = (gamesToRender: typeof games, title?: string) => (
+    <section>
+      {title && (
+        <div className="flex items-center justify-between p-3 mb-4 bg-card border border-border rounded-lg shadow-sm cursor-default">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+        </div>
       )}
-    </div>
+      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pb-8">
+        {gamesToRender.length > 0 ? gamesToRender.map(game => (
+          <GameCard key={game.id} game={game} />
+        )) : (
+          <p className="col-span-full text-center text-muted-foreground py-8">No games available in this section.</p>
+        )}
+      </div>
+    </section>
   );
 
   // Show profile creation if no active profile
   if (!state.activeProfileId) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
-        <div className="flex flex-1 items-center justify-center p-4">
-          <Card className="w-full max-w-md animate-fade-in">
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl">Welcome to Game Hub!</CardTitle>
-              <CardDescription>
-                Create a profile to start playing games and track your scores.
+        <div className="flex flex-1 items-center justify-center p-4" style={{ paddingBottom: 'env(safe-area-inset-bottom)'}}>
+          <Card className="w-full max-w-md animate-fade-in shadow-xl rounded-xl">
+            <CardHeader className="text-center pt-8"> {/* More padding top */}
+              <CardTitle className="text-3xl font-bold">Welcome to Game Hub!</CardTitle>
+              <CardDescription className="mt-2 text-base">
+                Create your profile to start playing.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="p-6 md:p-8"> {/* More padding */}
+              <div className="space-y-6"> {/* Increased spacing */}
                 <div className="space-y-2">
-                  <Label htmlFor="name">Your Name</Label>
+                  <Label htmlFor="name" className="text-sm font-medium">Your Name</Label>
                   <Input
                     id="name"
                     placeholder="Enter your name"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
+                    className="py-3 px-4 rounded-lg text-base" // Larger input
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>Choose an Avatar</Label>
-                  <div className="grid grid-cols-5 gap-2">
+                  <Label className="text-sm font-medium">Choose an Avatar</Label>
+                  <div className="grid grid-cols-5 gap-2 md:gap-3">
                     {["👾", "🎮", "🎯", "🎲", "🎪", "🎭", "🦄", "🐉", "🦊", "🐼"].map(
                       (emoji, index) => (
                         <Button
                           key={index}
                           variant={selectedAvatar === index ? "default" : "outline"}
-                          className="h-12 w-12 text-xl p-0"
+                          className="h-14 w-14 text-2xl p-0 rounded-lg transition-all active:scale-90" // Larger avatar buttons
                           onClick={() => setSelectedAvatar(index)}
                         >
                           {emoji}
@@ -128,11 +101,12 @@ const Index: React.FC = () => {
                 </div>
                 
                 <Button 
-                  className="w-full" 
+                  className="w-full py-3.5 text-base font-semibold rounded-lg transition-transform active:scale-95" // Prominent button
                   onClick={handleCreateProfile}
                   disabled={!nameInput.trim()}
+                  size="lg"
                 >
-                  Create Profile & Start Playing
+                  Create Profile & Play
                 </Button>
               </div>
             </CardContent>
@@ -145,82 +119,39 @@ const Index: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <NavBar />
-      <main className="flex-1 p-4 md:p-6 flex flex-col container mx-auto pb-8 md:pb-12"> {/* Added bottom padding */}
-        <div className="mb-6 md:mb-8 flex-shrink-0">
-          <h1 className="text-3xl md:text-4xl font-bold mb-1 md:mb-2 animate-fade-in">Game Collection</h1>
+      <main 
+        className="flex-1 p-4 md:p-6 flex flex-col container mx-auto"
+        style={{ 
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 2rem)', // Ensure bottom safe area + some padding
+          paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 1rem)', // Responsive padding for smaller screens
+          paddingRight: 'calc(env(safe-area-inset-right, 0px) + 1rem)'
+        }}
+      >
+        <div className="mb-6 md:mb-8 flex-shrink-0 pt-4"> {/* Added pt-4 for spacing below navbar */}
+          <h1 className="text-3xl md:text-4xl font-bold mb-2 animate-fade-in">Game Collection</h1>
           <p className="text-muted-foreground animate-fade-in delay-100 text-sm md:text-base">
-            Select a game to play or browse by category.
+            Explore our hand-picked selection of fun games.
           </p>
         </div>
-
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 flex-shrink-0 gap-4">
-          <div className="flex space-x-2">
-            <Button
-              variant={viewMode === "grid" ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("grid")}
-              className="w-24"
-            >
-              Grid
-            </Button>
-            <Button
-              variant={viewMode === "list" ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("list")}
-              className="w-24"
-            >
-              List
-            </Button>
-          </div>
-          
-          <div className="w-full sm:w-[200px]">
-            <Select 
-              defaultValue="available" 
-              value={filter}
-              onValueChange={(value) => setFilter(value as "all" | "available" | "multiplayer")}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter Games" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="available">Available Games</SelectItem>
-                <SelectItem value="multiplayer">Multiplayer Games</SelectItem>
-                <SelectItem value="all">All Games</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
         
-        <Tabs defaultValue="all" className="animate-fade-in flex flex-col flex-grow min-h-0"> {/* Added min-h-0 for flex child */}
-          <TabsList className="mb-4 md:mb-6 flex-shrink-0 grid grid-cols-3 sm:flex sm:w-auto">
-            <TabsTrigger value="all" className="flex-1 sm:flex-none">All</TabsTrigger>
-            <TabsTrigger value="puzzle" className="flex-1 sm:flex-none">Puzzle</TabsTrigger>
-            <TabsTrigger value="classic" className="flex-1 sm:flex-none">Classic</TabsTrigger>
-            <TabsTrigger value="strategy" className="flex-1 sm:flex-none">Strategy</TabsTrigger>
-            <TabsTrigger value="casual" className="flex-1 sm:flex-none">Casual</TabsTrigger>
-          </TabsList>
+        <ScrollArea className="flex-grow -mx-4 md:-mx-6 px-4 md:px-6"> {/* ScrollArea covers padding */}
+          {/* Render available games first */}
+          {renderGameList(availableGames, "Available Games")}
           
-          <ScrollArea className="flex-grow"> {/* flex-grow takes available space */}
-            <TabsContent value="all" className="mt-0">
-              {renderGameList(displayedGames)}
-            </TabsContent>
-            <TabsContent value="puzzle" className="mt-0">
-              {renderGameList(puzzleGames)}
-            </TabsContent>
-            <TabsContent value="classic" className="mt-0">
-              {renderGameList(classicGames)}
-            </TabsContent>
-            <TabsContent value="strategy" className="mt-0">
-              {renderGameList(strategyGames)}
-            </TabsContent>
-            <TabsContent value="casual" className="mt-0">
-              {renderGameList(casualGames)}
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
+          {/* Optionally, show "Coming Soon" games if any exist and are not in availableGames */}
+          { (() => {
+              const comingSoonGames = allGamesToDisplay.filter(g => !g.isAvailable);
+              if (comingSoonGames.length > 0) {
+                return renderGameList(comingSoonGames, "Coming Soon");
+              }
+              return null;
+            })()
+          }
+        </ScrollArea>
       </main>
     </div>
   );
 };
 
 export default Index;
+

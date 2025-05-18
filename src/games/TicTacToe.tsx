@@ -114,15 +114,15 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ p1Name, p2Name, isMultiplayerOver
     
     setIsXNext(!isXNext);
     
-    // If playing against AI and there's no winner yet, make the AI move
-    if (!actualIsMultiplayer && !gameWinner && !isXNext) { // Check !isXNext because AI is 'O'
+    // If playing against AI, there's no winner, and it was X's turn (so now it's AI's turn)
+    if (!actualIsMultiplayer && !gameWinner && isXNext) { 
       setTimeout(() => makeAIMove(newBoard), 500);
     }
   };
   
   // AI logic
   const makeAIMove = (currentBoard: Array<string | null>) => {
-    if (calculateWinner(currentBoard) || isXNext) return; // AI moves only if it's 'O's turn
+    if (calculateWinner(currentBoard) || !isXNext) return; // AI moves only if it's 'O's turn
     
     let move: number;
     
@@ -329,4 +329,3 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ p1Name, p2Name, isMultiplayerOver
 };
 
 export default TicTacToe;
-

@@ -8,6 +8,8 @@ interface GameStatusProps {
   currentPlayer: 1 | 2;
   isMultiplayer: boolean;
   aiThinking?: boolean;
+  player1Name: string;
+  player2Name: string;
 }
 
 const GameStatus: React.FC<GameStatusProps> = ({
@@ -15,13 +17,18 @@ const GameStatus: React.FC<GameStatusProps> = ({
   winner,
   currentPlayer,
   isMultiplayer,
-  aiThinking = false
+  aiThinking = false,
+  player1Name,
+  player2Name,
 }) => {
+  const winnerName = winner === 1 ? player1Name : player2Name;
+  const currentPlayerName = currentPlayer === 1 ? player1Name : player2Name;
+
   return (
     <div className="text-center mb-4">
       <div className={`text-lg font-medium ${gameOver ? 'text-primary' : ''} flex items-center justify-center gap-2`}>
         {gameOver 
-          ? `Player ${winner} Wins!` 
+          ? `${winnerName} Wins!` 
           : aiThinking
             ? (
               <>
@@ -29,9 +36,7 @@ const GameStatus: React.FC<GameStatusProps> = ({
                 <Loader2 className="h-4 w-4 animate-spin" />
               </>
             )
-            : `Player ${currentPlayer}'s Turn ${
-                !isMultiplayer && currentPlayer === 2 ? '(AI)' : ''
-              }`
+            : `${currentPlayerName}'s Turn ${!isMultiplayer && currentPlayer === 2 && player2Name === "AI" ? '(AI)' : ''}`
         }
       </div>
     </div>

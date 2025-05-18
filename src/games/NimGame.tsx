@@ -151,6 +151,8 @@ const NimGame: React.FC<NimGameProps> = ({ p1Name, p2Name, isMultiplayerOverride
             currentPlayer={currentPlayer}
             isMultiplayer={actualIsMultiplayer} // Use actualIsMultiplayer
             aiThinking={aiThinking}
+            player1Name={player1ActualName}
+            player2Name={player2ActualName}
             // Player names could be passed here if GameStatus needs to display them
             // For now, it uses Player 1/2 or AI based on isMultiplayer
           />

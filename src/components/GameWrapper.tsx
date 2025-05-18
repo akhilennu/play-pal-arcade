@@ -38,6 +38,22 @@ const GameInstructionsTicTacToe = lazy(() => import('@/games/tictactoe/GameInstr
 const GameInstructionsMemoryMatch = lazy(() => import('@/games/memorymatch/GameInstructions'));
 const GameInstructions2048 = lazy(() => import('@/games/game2048/GameInstructions'));
 
+// Key for Player 2's preferred name in local storage
+const PREFERRED_PLAYER2_NAME_KEY = 'playPalArcade_preferredPlayer2Name';
+
+// Helper to safely access localStorage
+const safeLocalStorageGet = (key: string): string | null => {
+  try {
+    // Ensure localStorage is available (it might not be in some environments like server-side rendering or private browsing)
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem(key);
+    }
+    return null;
+  } catch (e) {
+    console.warn("localStorage access denied or unavailable.", e);
+    return null;
+  }
+};
 const GameLoader: React.FC<{ gameId: string; player1Name?: string; player2Name?: string; isMultiplayer?: boolean }> = ({ gameId, player1Name, player2Name, isMultiplayer }) => {
   const gameData = getGameById(gameId);
   
@@ -110,9 +126,9 @@ const GameWrapper: React.FC = () => {
       dispatch({ type: 'SET_MULTIPLAYER', payload: initialMultiplayer});
 
     }
-  }, [game, dispatch]); // Only re-run when the game (gameId) changes
+  }, [game, dispatch, state.gameSettings.isMultiplayer]); // Added state.gameSettings.isMultiplayer
 
-  // Effect to initialize Player 1's name from the active profile
+  // Effect to initialize Player names
   useEffect(() => {
     if (state.activeProfileId) {
       const currentProfile = state.profiles.find(p => p.id === state.activeProfileId);
@@ -124,9 +140,19 @@ const GameWrapper: React.FC = () => {
     } else {
       setPlayer1Name("Player 1"); // Fallback if no active profile
     }
-    // Initialize Player 2 name as well, or leave it for user input in multiplayer
-    setPlayer2Name("Player 2"); // Default P2 name
-  }, [state.activeProfileId, state.profiles]);
+
+    // Initialize Player 2 Name based on multiplayer status and localStorage.
+    // Game components (like TicTacToe, Nim) will typically set the actual player 2 name
+    // to "AI" in single-player mode. This state is primarily for the GameSettingsModal
+    // input and for passing to games that might use it directly in multiplayer.
+    if (game?.supportsMultiplayer && isMultiplayer) {
+      const storedP2Name = safeLocalStorageGet(PREFERRED_PLAYER2_NAME_KEY);
+      setPlayer2Name(storedP2Name || "Player 2");
+    } else {
+      // If not multiplayer or game doesn't support it, P2 name input isn't shown in modal.
+      setPlayer2Name("Player 2"); // Default placeholder
+    }
+  }, [state.activeProfileId, state.profiles, isMultiplayer, game]); // Added isMultiplayer and game
 
   const toggleSound = () => {
     dispatch({ type: "TOGGLE_SOUND", payload: !state.soundEnabled });

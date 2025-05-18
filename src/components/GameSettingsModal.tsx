@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -29,6 +29,25 @@ interface GameSettingsModalProps {
   onPlayer2NameChange?: (name: string) => void;
 }
 
+const PREFERRED_PLAYER2_NAME_KEY = 'playPalArcade_preferredPlayer2Name';
+
+const safeLocalStorageGet = (key: string): string | null => {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    console.warn("localStorage access denied or unavailable.", e);
+    return null;
+  }
+};
+
+const safeLocalStorageSet = (key: string, value: string): void => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.warn("localStorage access denied or unavailable.", e);
+  }
+};
+
 const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   game,
   difficulty,
@@ -44,6 +63,35 @@ const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   onPlayer2NameChange,
 }) => {
   if (!game) return null;
+
+  const [internalP2Name, setInternalP2Name] = useState<string>('');
+
+  useEffect(() => {
+    if (game?.supportsMultiplayer && isMultiplayer) {
+      let nameToUse: string;
+      if (player2Name && player2Name.trim() !== "") {
+        // Parent provided a specific, non-empty name; use that.
+        nameToUse = player2Name;
+      } else {
+        // Parent provided no name or an empty name; try localStorage or default.
+        const storedName = safeLocalStorageGet(PREFERRED_PLAYER2_NAME_KEY);
+        nameToUse = storedName || "Player 2";
+      }
+      setInternalP2Name(nameToUse);
+
+      // If the determined name is different from what parent currently has, update parent.
+      if (nameToUse !== player2Name && onPlayer2NameChange) {
+        onPlayer2NameChange(nameToUse);
+      }
+    }
+  }, [isMultiplayer, game?.supportsMultiplayer, player2Name, onPlayer2NameChange]);
+
+  const handleInternalPlayer2NameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    setInternalP2Name(newName);
+    safeLocalStorageSet(PREFERRED_PLAYER2_NAME_KEY, newName);
+    onPlayer2NameChange?.(newName);
+  };
 
   return (
     <>
@@ -168,8 +216,8 @@ const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
               <Label htmlFor="player2NameInput" className="text-sm font-medium">Player 2 Name</Label>
               <Input
                 id="player2NameInput"
-                value={player2Name}
-                onChange={(e) => onPlayer2NameChange?.(e.target.value)}
+                value={internalP2Name}
+                onChange={handleInternalPlayer2NameChange}
                 placeholder="Enter Player 2 Name"
                 className="mt-1"
               />

@@ -145,7 +145,7 @@ const Index: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <NavBar />
-      <main className="flex-1 p-4 md:p-6 flex flex-col container mx-auto">
+      <main className="flex-1 p-4 md:p-6 flex flex-col container mx-auto pb-8 md:pb-12"> {/* Added bottom padding */}
         <div className="mb-6 md:mb-8 flex-shrink-0">
           <h1 className="text-3xl md:text-4xl font-bold mb-1 md:mb-2 animate-fade-in">Game Collection</h1>
           <p className="text-muted-foreground animate-fade-in delay-100 text-sm md:text-base">

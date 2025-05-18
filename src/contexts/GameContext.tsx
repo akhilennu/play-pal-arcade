@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useEffect, useReducer } from "react";
+import React, { createContext, useContext, useReducer, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { GameDifficulty, UserProfile, Score, Achievement } from "@/types";
 
@@ -19,19 +18,27 @@ interface GameState {
   theme: "light" | "dark" | "system";
 }
 
-const initialState: GameState = {
+const initialCoreState: Omit<GameState, 'profiles' | 'activeProfileId' | 'scores'> = {
   currentGame: null,
   gameSettings: {
     difficulty: GameDifficulty.MEDIUM,
     isMultiplayer: false,
   },
-  profiles: [],
-  activeProfileId: null,
-  scores: [],
   achievements: [],
   soundEnabled: true,
   musicEnabled: true,
   theme: "system",
+};
+
+const initialUserState = {
+  profiles: [],
+  activeProfileId: null,
+  scores: [],
+};
+
+const initialState: GameState = {
+  ...initialCoreState,
+  ...initialUserState,
 };
 
 // Define actions
@@ -40,13 +47,17 @@ type GameAction =
   | { type: "SET_DIFFICULTY"; payload: GameDifficulty }
   | { type: "SET_MULTIPLAYER"; payload: boolean }
   | { type: "ADD_PROFILE"; payload: UserProfile }
-  | { type: "SET_ACTIVE_PROFILE"; payload: string }
+  | { type: "SET_ACTIVE_PROFILE"; payload: string | null }
   | { type: "UPDATE_PROFILE"; payload: Partial<UserProfile> & { id: string } }
   | { type: "ADD_SCORE"; payload: Score }
   | { type: "UNLOCK_ACHIEVEMENT"; payload: { profileId: string; achievementId: string } }
   | { type: "TOGGLE_SOUND"; payload: boolean }
   | { type: "TOGGLE_MUSIC"; payload: boolean }
-  | { type: "SET_THEME"; payload: "light" | "dark" | "system" };
+  | { type: "SET_THEME"; payload: "light" | "dark" | "system" }
+  | { type: "RESET_USER_DATA" }
+  | { type: "SET_PROFILES"; payload: UserProfile[] }
+  | { type: "SET_SCORES"; payload: Score[] }
+  | { type: "SET_ACHIEVEMENTS"; payload: Achievement[] };
 
 // Create reducer
 const gameReducer = (state: GameState, action: GameAction): GameState => {
@@ -101,6 +112,19 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return { ...state, musicEnabled: action.payload };
     case "SET_THEME":
       return { ...state, theme: action.payload };
+    case "RESET_USER_DATA":
+      return {
+        ...state,
+        profiles: [],
+        activeProfileId: null,
+        scores: [],
+      };
+    case "SET_PROFILES":
+      return { ...state, profiles: action.payload };
+    case "SET_SCORES":
+      return { ...state, scores: action.payload };
+    case "SET_ACHIEVEMENTS":
+      return { ...state, achievements: action.payload };
     default:
       return state;
   }
@@ -121,50 +145,63 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const { toast } = useToast();
 
-  // Load state from localStorage on mount
   useEffect(() => {
-    const savedState = localStorage.getItem("gameAppState");
-    if (savedState) {
+    const savedStateString = localStorage.getItem("gameAppState");
+    if (savedStateString) {
       try {
-        const parsedState = JSON.parse(savedState);
-        // Convert date strings back to Date objects
-        if (parsedState.profiles) {
-          parsedState.profiles = parsedState.profiles.map((profile: any) => ({
+        const savedState = JSON.parse(savedStateString) as Partial<GameState>;
+        
+        // Create a full state object to dispatch, ensuring all keys are present
+        const fullLoadedState: GameState = { ...initialState, ...savedState };
+
+        // Convert date strings back to Date objects more robustly
+        const parseDates = (profiles: UserProfile[] | undefined, scores: Score[] | undefined) => {
+          const parsedProfiles = profiles?.map(profile => ({
             ...profile,
-            createdAt: new Date(profile.createdAt),
-            achievements: profile.achievements.map((a: any) => ({
+            createdAt: profile.createdAt ? new Date(profile.createdAt) : new Date(),
+            achievements: profile.achievements?.map(a => ({
               ...a,
               unlockedAt: a.unlockedAt ? new Date(a.unlockedAt) : undefined,
-            })),
-          }));
-        }
-        if (parsedState.scores) {
-          parsedState.scores = parsedState.scores.map((score: any) => ({
+            })) || [],
+          })) || [];
+
+          const parsedScores = scores?.map(score => ({
             ...score,
-            date: new Date(score.date),
-          }));
+            date: score.date ? new Date(score.date) : new Date(),
+          })) || [];
+          return { parsedProfiles, parsedScores };
+        };
+
+        const { parsedProfiles, parsedScores } = parseDates(savedState.profiles, savedState.scores);
+
+        // Dispatch individual actions to populate the state
+        // This ensures the reducer logic is respected for each piece of state
+        if (parsedProfiles) dispatch({ type: "SET_PROFILES", payload: parsedProfiles });
+        if (parsedScores) dispatch({ type: "SET_SCORES", payload: parsedScores });
+        if (savedState.activeProfileId !== undefined) dispatch({ type: "SET_ACTIVE_PROFILE", payload: savedState.activeProfileId });
+        if (savedState.gameSettings) {
+            if (savedState.gameSettings.difficulty) dispatch({ type: "SET_DIFFICULTY", payload: savedState.gameSettings.difficulty });
+            if (savedState.gameSettings.isMultiplayer !== undefined) dispatch({ type: "SET_MULTIPLAYER", payload: savedState.gameSettings.isMultiplayer });
         }
-        
-        // Apply saved state
-        Object.keys(parsedState).forEach((key) => {
-          dispatch({ 
-            // @ts-ignore - This is a dynamic dispatch based on the saved state
-            type: `SET_${key.toUpperCase()}`, 
-            payload: parsedState[key] 
-          });
-        });
+        if (savedState.currentGame !== undefined) dispatch({ type: "SET_CURRENT_GAME", payload: savedState.currentGame });
+        if (savedState.soundEnabled !== undefined) dispatch({ type: "TOGGLE_SOUND", payload: savedState.soundEnabled });
+        if (savedState.musicEnabled !== undefined) dispatch({ type: "TOGGLE_MUSIC", payload: savedState.musicEnabled });
+        if (savedState.theme) dispatch({ type: "SET_THEME", payload: savedState.theme });
+        if (savedState.achievements) dispatch({ type: "SET_ACHIEVEMENTS", payload: savedState.achievements });
+
       } catch (error) {
-        console.error("Failed to parse saved game state:", error);
+        console.error("Failed to parse or apply saved game state:", error);
         toast({
           title: "Error",
-          description: "Failed to load saved game data",
+          description: "Failed to load saved game data. Resetting to defaults.",
           variant: "destructive",
         });
+        // Optionally clear corrupted local storage
+        localStorage.removeItem("gameAppState");
       }
     }
-  }, []);
+  }, [toast]);
 
-  // Save state to localStorage on change
   useEffect(() => {
     localStorage.setItem("gameAppState", JSON.stringify(state));
   }, [state]);

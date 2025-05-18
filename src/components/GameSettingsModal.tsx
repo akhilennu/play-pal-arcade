@@ -11,27 +11,37 @@ import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose
 import { User, Users, Volume2, VolumeX, Info, Puzzle, Users2, ShieldQuestion, HelpCircle } from 'lucide-react'; // Added HelpCircle
 import { GameDifficulty, Game } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input'; // Added for name inputs
+import { Label } from '@/components/ui/label'; // Added for name inputs
 
 interface GameSettingsModalProps {
   game: Game | null;
   difficulty: GameDifficulty;
-  isMultiplayer: boolean;
+  isMultiplayer: boolean; // This prop indicates the currently selected game mode
   soundEnabled: boolean;
   onDifficultyChange: (value: GameDifficulty) => void;
   onMultiplayerChange: (value: boolean) => void;
   onSoundToggle: () => void;
-  howToPlayContent?: React.ReactNode; // New prop
+  howToPlayContent?: React.ReactNode;
+  player1Name?: string;
+  onPlayer1NameChange?: (name: string) => void;
+  player2Name?: string;
+  onPlayer2NameChange?: (name: string) => void;
 }
 
 const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
   game,
   difficulty,
-  isMultiplayer,
+  isMultiplayer, // Reflects the game mode selected in GameWrapper
   soundEnabled,
   onDifficultyChange,
   onMultiplayerChange,
   onSoundToggle,
-  howToPlayContent, // Destructure new prop
+  howToPlayContent,
+  player1Name,
+  onPlayer1NameChange,
+  player2Name,
+  onPlayer2NameChange,
 }) => {
   if (!game) return null;
 
@@ -44,8 +54,8 @@ const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
         </DialogDescription>
       </DialogHeader>
       
-      <div className="py-4 space-y-6">
-        {/* Game Information Section (metadata) */}
+      <div className="py-4 space-y-6 max-h-[70vh] overflow-y-auto pr-2"> {/* Added scroll for long modals */}
+        {/* Game Information Section */}
         <div>
           <h4 className="text-md font-medium mb-2 flex items-center">
             <Info className="mr-2 h-5 w-5 text-primary" />
@@ -138,6 +148,32 @@ const GameSettingsModal: React.FC<GameSettingsModalProps> = ({
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        )}
+
+        {/* Player Name Inputs for Multiplayer */}
+        {game.supportsMultiplayer && isMultiplayer && (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="player1NameInput" className="text-sm font-medium">Player 1 Name</Label>
+              <Input
+                id="player1NameInput"
+                value={player1Name}
+                onChange={(e) => onPlayer1NameChange?.(e.target.value)}
+                placeholder="Enter Player 1 Name"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="player2NameInput" className="text-sm font-medium">Player 2 Name</Label>
+              <Input
+                id="player2NameInput"
+                value={player2Name}
+                onChange={(e) => onPlayer2NameChange?.(e.target.value)}
+                placeholder="Enter Player 2 Name"
+                className="mt-1"
+              />
+            </div>
           </div>
         )}
 

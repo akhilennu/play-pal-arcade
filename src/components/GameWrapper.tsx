@@ -22,6 +22,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import GameSettingsModal from './GameSettingsModal';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 // Lazy load games - FIXED: Using correct dynamic imports
 const TicTacToe = lazy(() => import('@/games/TicTacToe'));
@@ -36,19 +38,19 @@ const GameInstructionsTicTacToe = lazy(() => import('@/games/tictactoe/GameInstr
 const GameInstructionsMemoryMatch = lazy(() => import('@/games/memorymatch/GameInstructions'));
 const GameInstructions2048 = lazy(() => import('@/games/game2048/GameInstructions'));
 
-const GameLoader: React.FC<{ gameId: string }> = ({ gameId }) => {
+const GameLoader: React.FC<{ gameId: string; player1Name?: string; player2Name?: string; isMultiplayer?: boolean }> = ({ gameId, player1Name, player2Name, isMultiplayer }) => {
   const gameData = getGameById(gameId);
   
-  // Fix: Don't rely on component property, directly use gameId to determine which game to load
+  // Pass names to games that might use them for multiplayer display
   switch (gameId) {
     case 'tictactoe':
-      return <TicTacToe />;
+      return <TicTacToe p1Name={player1Name} p2Name={player2Name} isMultiplayerOverride={isMultiplayer} />;
     case 'memorymatch':
-      return <MemoryMatch />;
+      return <MemoryMatch />; // Assuming MemoryMatch doesn't use these names yet
     case 'game2048':
-      return <Game2048 />;
+      return <Game2048 />; // Assuming 2048 doesn't use these names yet
     case 'nim':
-      return <NimGame />;
+      return <NimGame p1Name={player1Name} p2Name={player2Name} isMultiplayerOverride={isMultiplayer} />;
     case 'hangman':
     case 'connectfour':
     case 'sudoku':
@@ -72,8 +74,6 @@ const HowToPlayContentProvider: React.FC<{ gameId: string }> = ({ gameId }) => {
       return <p className="italic text-muted-foreground">Detailed instructions for Hangman are coming soon!</p>;
     case 'connectfour': // Placeholder for Connect Four
       return <p className="italic text-muted-foreground">Detailed instructions for Connect Four are coming soon!</p>;
-    // Sudoku is isAvailable:false, so it won't typically reach here unless directly navigated to.
-    // We can add a case for it if needed, or rely on the default.
     default:
       return <p className="italic text-muted-foreground">Detailed instructions for this game are coming soon!</p>;
   }
@@ -93,20 +93,40 @@ const GameWrapper: React.FC = () => {
   const [isMultiplayer, setIsMultiplayer] = React.useState<boolean>(
     state.gameSettings.isMultiplayer
   );
+  const [player1Name, setPlayer1Name] = React.useState<string>("");
+  const [player2Name, setPlayer2Name] = React.useState<string>("");
 
+  // Effect to set initial difficulty and multiplayer status when game changes
   useEffect(() => {
     if (game) {
-      // When the game data is available (or changes), set the difficulty
-      // to this game's defined default difficulty.
+      // Set difficulty from game's default
       const gameDefaultDifficulty = game.defaultDifficulty;
       setDifficulty(gameDefaultDifficulty);
-      // Also dispatch this to the global game context so the settings modal
-      // and other parts of the app are aware of the current game's effective difficulty.
-      if (state.gameSettings.difficulty !== gameDefaultDifficulty) {
-        dispatch({ type: 'SET_DIFFICULTY', payload: gameDefaultDifficulty });
-      }
+      dispatch({ type: 'SET_DIFFICULTY', payload: gameDefaultDifficulty });
+
+      // Set multiplayer based on game support and context, defaulting to false if not supported
+      const initialMultiplayer = game.supportsMultiplayer ? state.gameSettings.isMultiplayer : false;
+      setIsMultiplayer(initialMultiplayer);
+      dispatch({ type: 'SET_MULTIPLAYER', payload: initialMultiplayer});
+
     }
-  }, [game, dispatch, state.gameSettings.difficulty]); // Rerun if game object changes or context difficulty changes externally
+  }, [game, dispatch]); // Only re-run when the game (gameId) changes
+
+  // Effect to initialize Player 1's name from the active profile
+  useEffect(() => {
+    if (state.activeProfileId) {
+      const currentProfile = state.profiles.find(p => p.id === state.activeProfileId);
+      if (currentProfile) {
+        setPlayer1Name(currentProfile.name);
+      } else {
+        setPlayer1Name("Player 1"); // Fallback
+      }
+    } else {
+      setPlayer1Name("Player 1"); // Fallback if no active profile
+    }
+    // Initialize Player 2 name as well, or leave it for user input in multiplayer
+    setPlayer2Name("Player 2"); // Default P2 name
+  }, [state.activeProfileId, state.profiles]);
 
   const toggleSound = () => {
     dispatch({ type: "TOGGLE_SOUND", payload: !state.soundEnabled });
@@ -143,9 +163,9 @@ const GameWrapper: React.FC = () => {
   };
   
   return (
-    <div className="flex flex-col bg-background overflow-hidden">
+    <div className="flex flex-col bg-background overflow-hidden min-h-screen">
       <NavBar />
-      <main className="flex-1 container mx-auto p-4 flex flex-col">
+      <main className="flex-1 container mx-auto p-4 flex flex-col pb-8 md:pb-12">
         <div className="mb-6 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
             <Button variant="outline" size="icon" className="mr-4 h-10 w-10" onClick={() => navigate('/')}>
@@ -154,7 +174,6 @@ const GameWrapper: React.FC = () => {
             </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">{game.name}</h1>
-              {/* Game description is now in the modal, so removed from here if it existed */}
             </div>
           </div>
           <Dialog>
@@ -168,12 +187,16 @@ const GameWrapper: React.FC = () => {
               <GameSettingsModal
                 game={game}
                 difficulty={difficulty}
-                isMultiplayer={isMultiplayer}
+                isMultiplayer={isMultiplayer} // This is the current game mode
                 soundEnabled={state.soundEnabled}
                 onDifficultyChange={handleDifficultyChange}
                 onMultiplayerChange={handleMultiplayerChange}
                 onSoundToggle={toggleSound}
                 howToPlayContent={<HowToPlayContentProvider gameId={game.id} />}
+                player1Name={player1Name}
+                onPlayer1NameChange={setPlayer1Name}
+                player2Name={player2Name}
+                onPlayer2NameChange={setPlayer2Name}
               />
             </DialogContent>
           </Dialog>
@@ -185,7 +208,7 @@ const GameWrapper: React.FC = () => {
             - min-h-0: Crucial for allowing this Card to shrink below its content's intrinsic height. This prevents the game (which might be h-full) from pushing the Card and subsequently the 'main' element to be too tall, thus avoiding page scrollbars. */}
         <Card className="p-0 overflow-hidden flex-grow flex flex-col min-h-0 max-h-fit"> 
           <Suspense fallback={<GameLoading />}>
-            {gameId && <GameLoader gameId={gameId} />}
+            {gameId && <GameLoader gameId={gameId} player1Name={player1Name} player2Name={player2Name} isMultiplayer={isMultiplayer} />}
           </Suspense>
         </Card>
       </main>

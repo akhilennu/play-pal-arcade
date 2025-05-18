@@ -5,6 +5,7 @@
 
 @layer base {
   :root {
+    /* ... keep existing code (CSS variables for light theme) ... */
     --background: 0 0% 100%;
     --foreground: 222.2 47.4% 11.2%;
     
@@ -48,6 +49,7 @@
   }
   
   .dark {
+    /* ... keep existing code (CSS variables for dark theme) ... */
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
     
@@ -99,9 +101,26 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Add safe area padding */
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* Ensure html and body take full height for sticky footers or full-page layouts */
+  html, body, #root {
+    min-height: 100vh; /* Use min-height for flexibility */
+    display: flex;
+    flex-direction: column;
+  }
+  #root {
+    flex-grow: 1; /* Allow root to grow and fill space */
+  }
+
 }
 
+/* ... keep existing code (Game-specific styles, Loading Screen, Animation utilities, Accessibility focus styles, etc.) ... */
 /* Game-specific styles */
 .rotate-y-180 {
   transform: rotateY(180deg);

@@ -1,20 +1,32 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import { useGameContext } from '@/contexts/GameContext';
-import { v4 as uuidv4 } from 'uuid';
 import { GameDifficulty } from '@/types';
 
-const TicTacToe: React.FC = () => {
+interface TicTacToeProps {
+  p1Name?: string;
+  p2Name?: string;
+  isMultiplayerOverride?: boolean;
+}
+
+const TicTacToe: React.FC<TicTacToeProps> = ({ p1Name, p2Name, isMultiplayerOverride }) => {
   const { state, dispatch } = useGameContext();
-  const { difficulty, isMultiplayer } = state.gameSettings;
-  const { activeProfileId } = state;
+  const { difficulty: contextDifficulty, isMultiplayer: contextIsMultiplayer, activeProfileId, profiles } = state;
   
+  // Determine actual isMultiplayer state
+  const actualIsMultiplayer = typeof isMultiplayerOverride === 'boolean' 
+                              ? isMultiplayerOverride 
+                              : contextIsMultiplayer;
+  
+  // Determine player names
+  const player1ActualName = p1Name || profiles.find(p => p.id === activeProfileId)?.name || "Player X";
+  const player2ActualName = actualIsMultiplayer ? (p2Name || "Player O") : "AI";
+
   // Game state
   const [board, setBoard] = useState<Array<string | null>>(Array(9).fill(null));
-  const [isXNext, setIsXNext] = useState(true);
+  const [isXNext, setIsXNext] = useState(true); // X is always the first player
   const [winner, setWinner] = useState<'X' | 'O' | 'draw' | null>(null);
   
   // Reset game
@@ -50,37 +62,41 @@ const TicTacToe: React.FC = () => {
   
   // Handle click on a square
   const handleClick = (index: number) => {
-    // Return if there's a winner or the square is already filled
-    if (winner || board[index] || (!isMultiplayer && !isXNext)) {
+    // Return if there's a winner or the square is already filled or if it's AI's turn in single player
+    if (winner || board[index] || (!actualIsMultiplayer && !isXNext)) {
       return;
     }
     
     const newBoard = [...board];
-    newBoard[index] = isXNext ? 'X' : 'O';
+    newBoard[index] = isXNext ? 'X' : 'O'; // 'X' is player 1, 'O' is player 2 or AI
     setBoard(newBoard);
     
     const gameWinner = calculateWinner(newBoard);
     if (gameWinner) {
       setWinner(gameWinner);
       
-      // Update score if game is won
       if (activeProfileId) {
+        const winnerName = gameWinner === 'X' ? player1ActualName : player2ActualName;
         if (gameWinner === 'X' || gameWinner === 'O') {
-          const score = gameWinner === 'X' ? 10 : 5;
-          dispatch({
-            type: 'ADD_SCORE',
-            payload: {
-              userId: activeProfileId,
-              gameId: 'tictactoe',
-              score,
-              difficulty: difficulty as GameDifficulty,
-              date: new Date(),
-            },
-          });
+          // Only add score if Player X (human) wins in single player, or any player wins in multiplayer
+          const shouldAddScore = actualIsMultiplayer || (!actualIsMultiplayer && gameWinner === 'X');
+          if (shouldAddScore) {
+            const score = 10; // Simplified score
+            dispatch({
+              type: 'ADD_SCORE',
+              payload: {
+                userId: activeProfileId,
+                gameId: 'tictactoe',
+                score,
+                difficulty: contextDifficulty as GameDifficulty, // Use context difficulty for scoring
+                date: new Date(),
+              },
+            });
+          }
           
           toast({
-            title: `${gameWinner} Wins!`,
-            description: `Player ${gameWinner} has won the game.`,
+            title: `${winnerName} Wins!`,
+            description: `${winnerName} has won the game.`,
           });
         } else if (gameWinner === 'draw') {
           toast({
@@ -96,47 +112,44 @@ const TicTacToe: React.FC = () => {
     setIsXNext(!isXNext);
     
     // If playing against AI and there's no winner yet, make the AI move
-    if (!isMultiplayer && !gameWinner) {
+    if (!actualIsMultiplayer && !gameWinner && !isXNext) { // Check !isXNext because AI is 'O'
       setTimeout(() => makeAIMove(newBoard), 500);
     }
   };
   
   // AI logic
   const makeAIMove = (currentBoard: Array<string | null>) => {
-    if (calculateWinner(currentBoard)) return;
+    if (calculateWinner(currentBoard) || isXNext) return; // AI moves only if it's 'O's turn
     
     let move: number;
     
-    switch (difficulty) {
+    switch (contextDifficulty) { // AI difficulty from context
       case GameDifficulty.HARD:
-        move = getBestMove(currentBoard);
+        move = getBestMove(currentBoard, 'O'); // AI is 'O'
         break;
       case GameDifficulty.MEDIUM:
-        // 70% chance of making the best move, 30% chance of making a random move
-        move = Math.random() < 0.7 ? getBestMove(currentBoard) : getRandomMove(currentBoard);
+        move = Math.random() < 0.7 ? getBestMove(currentBoard, 'O') : getRandomMove(currentBoard);
         break;
       case GameDifficulty.EASY:
       default:
-        // Make random moves
         move = getRandomMove(currentBoard);
         break;
     }
     
     if (move !== -1) {
       const newBoard = [...currentBoard];
-      newBoard[move] = 'O';
+      newBoard[move] = 'O'; // AI plays as 'O'
       setBoard(newBoard);
       
       const gameWinner = calculateWinner(newBoard);
       if (gameWinner) {
         setWinner(gameWinner);
-        
-        // Update score if AI wins
-        if (activeProfileId) {
-          if (gameWinner === 'X' || gameWinner === 'O') {
+        const winnerName = gameWinner === 'X' ? player1ActualName : (gameWinner === 'O' ? player2ActualName : "Draw");
+
+        if (gameWinner === 'X' || gameWinner === 'O') {
             toast({
-              title: `${gameWinner} Wins!`,
-              description: `Player ${gameWinner} has won the game.`,
+              title: `${winnerName} Wins!`,
+              description: `${winnerName} has won the game.`,
             });
           } else if (gameWinner === 'draw') {
             toast({
@@ -144,10 +157,8 @@ const TicTacToe: React.FC = () => {
               description: "The game ended in a draw.",
             });
           }
-        }
       }
-      
-      setIsXNext(true);
+      setIsXNext(true); // Switch back to player X's turn
     }
   };
   
@@ -163,62 +174,62 @@ const TicTacToe: React.FC = () => {
   };
   
   // Minimax algorithm for unbeatable AI in hard mode
-  const getBestMove = (currentBoard: Array<string | null>): number => {
-    let bestScore = -Infinity;
+  const getBestMove = (currentBoard: Array<string | null>, player: 'X' | 'O'): number => {
+    let bestScore = player === 'O' ? -Infinity : Infinity; // AI ('O') maximizes, Human ('X') minimizes for AI's perspective
     let bestMove = -1;
     
     for (let i = 0; i < currentBoard.length; i++) {
       if (currentBoard[i] === null) {
-        currentBoard[i] = 'O';
-        const score = minimax(currentBoard, 0, false);
+        currentBoard[i] = player;
+        const score = minimax(currentBoard, 0, player === 'X'); // If current player is 'X', next is 'O' (maximizing for AI)
         currentBoard[i] = null;
         
-        if (score > bestScore) {
-          bestScore = score;
-          bestMove = i;
+        if (player === 'O') { // AI is 'O', wants to maximize score
+          if (score > bestScore) {
+            bestScore = score;
+            bestMove = i;
+          }
+        } else { // Hypothetically, if 'X' was using minimax (minimizing for AI's perspective)
+          if (score < bestScore) {
+            bestScore = score;
+            bestMove = i;
+          }
         }
       }
     }
-    
     return bestMove;
   };
   
   const minimax = (
     currentBoard: Array<string | null>,
     depth: number,
-    isMaximizing: boolean
+    isMaximizingPlayer: boolean // True if it's AI 'O's turn to maximize its score
   ): number => {
     const gameWinner = calculateWinner(currentBoard);
     
-    if (gameWinner === 'O') return 10 - depth;
-    if (gameWinner === 'X') return depth - 10;
+    if (gameWinner === 'O') return 10 - depth; // AI 'O' wins
+    if (gameWinner === 'X') return depth - 10; // Player 'X' wins
     if (gameWinner === 'draw') return 0;
     
-    if (isMaximizing) {
+    if (isMaximizingPlayer) { // AI 'O' is maximizing
       let bestScore = -Infinity;
-      
       for (let i = 0; i < currentBoard.length; i++) {
         if (currentBoard[i] === null) {
           currentBoard[i] = 'O';
-          const score = minimax(currentBoard, depth + 1, false);
+          bestScore = Math.max(bestScore, minimax(currentBoard, depth + 1, false));
           currentBoard[i] = null;
-          bestScore = Math.max(bestScore, score);
         }
       }
-      
       return bestScore;
-    } else {
+    } else { // Player 'X' is minimizing (from AI's perspective)
       let bestScore = Infinity;
-      
       for (let i = 0; i < currentBoard.length; i++) {
         if (currentBoard[i] === null) {
           currentBoard[i] = 'X';
-          const score = minimax(currentBoard, depth + 1, true);
+          bestScore = Math.min(bestScore, minimax(currentBoard, depth + 1, true));
           currentBoard[i] = null;
-          bestScore = Math.min(bestScore, score);
         }
       }
-      
       return bestScore;
     }
   };
@@ -231,9 +242,9 @@ const TicTacToe: React.FC = () => {
         onClick={() => handleClick(index)}
         className={`w-full h-24 flex items-center justify-center text-4xl font-bold border-2
           ${value === 'X' ? 'text-tictactoe-accent' : value === 'O' ? 'text-tictactoe-primary' : ''}
-          ${winner ? 'cursor-not-allowed' : 'hover:bg-muted'}
+          ${winner || (!actualIsMultiplayer && !isXNext) ? 'cursor-not-allowed' : 'hover:bg-muted'}
           transition-colors duration-200`}
-        disabled={!!winner}
+        disabled={!!winner || (!actualIsMultiplayer && !isXNext)}
       >
         {value}
       </button>
@@ -242,21 +253,20 @@ const TicTacToe: React.FC = () => {
   
   // Display game status
   const renderStatus = () => {
-    let status;
     if (winner) {
-      status = winner === 'draw'
-        ? "Game ended in a draw!"
-        : `Winner: ${winner}`;
+      if (winner === 'draw') return "Game ended in a draw!";
+      const winnerName = winner === 'X' ? player1ActualName : player2ActualName;
+      return `Winner: ${winnerName}`;
     } else {
-      status = `Next player: ${isXNext ? 'X' : 'O'}`;
+      const nextPlayerName = isXNext ? player1ActualName : player2ActualName;
+      return `Next player: ${nextPlayerName} (${isXNext ? 'X' : 'O'})`;
     }
-    return status;
   };
 
-  // Start a new game when difficulty or multiplayer mode changes
+  // Start a new game when difficulty or multiplayer mode from context/override changes
   useEffect(() => {
     resetGame();
-  }, [difficulty, isMultiplayer]);
+  }, [contextDifficulty, actualIsMultiplayer]); // Use actualIsMultiplayer and contextDifficulty
   
   return (
     <div className="flex flex-col h-full p-4">

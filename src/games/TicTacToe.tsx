@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +14,9 @@ interface TicTacToeProps {
 
 const TicTacToe: React.FC<TicTacToeProps> = ({ p1Name, p2Name, isMultiplayerOverride }) => {
   const { state, dispatch } = useGameContext();
-  const { difficulty: contextDifficulty, isMultiplayer: contextIsMultiplayer, activeProfileId, profiles } = state;
+  // Corrected destructuring for difficulty and isMultiplayer
+  const { gameSettings, activeProfileId, profiles } = state;
+  const { difficulty: contextDifficulty, isMultiplayer: contextIsMultiplayer } = gameSettings;
   
   // Determine actual isMultiplayer state
   const actualIsMultiplayer = typeof isMultiplayerOverride === 'boolean' 
@@ -147,9 +150,29 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ p1Name, p2Name, isMultiplayerOver
         const winnerName = gameWinner === 'X' ? player1ActualName : (gameWinner === 'O' ? player2ActualName : "Draw");
 
         if (gameWinner === 'X' || gameWinner === 'O') {
+            // Single Player Mode:
+            // If player 1 (user) wins: show “You won!”
+            // If player 2 (AI) wins: show “AI won.”
+            // Multiplayer Mode:
+            // Display result as: “<Player Name> won!”
+            let toastTitle: string;
+            let toastDescription: string;
+
+            if (actualIsMultiplayer) {
+                toastTitle = `${winnerName} Wins!`;
+                toastDescription = `${winnerName} has won the game.`;
+            } else { // Single player
+                if (gameWinner === 'X') { // Player (User) wins
+                    toastTitle = "You Won!";
+                    toastDescription = "Congratulations, you beat the AI!";
+                } else { // AI wins
+                    toastTitle = "AI Won";
+                    toastDescription = "The AI has won the game.";
+                }
+            }
             toast({
-              title: `${winnerName} Wins!`,
-              description: `${winnerName} has won the game.`,
+              title: toastTitle,
+              description: toastDescription,
             });
           } else if (gameWinner === 'draw') {
             toast({
@@ -237,14 +260,20 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ p1Name, p2Name, isMultiplayerOver
   // Render each square
   const renderSquare = (index: number) => {
     const value = board[index];
+    const boxSize = 'w-20 h-20 md:w-24 md:h-24'; // Responsive box size
+    const textSize = 'text-3xl md:text-4xl'; // Responsive text size
+    
     return (
       <button
         onClick={() => handleClick(index)}
-        className={`w-full h-24 flex items-center justify-center text-4xl font-bold border-2
-          ${value === 'X' ? 'text-tictactoe-accent' : value === 'O' ? 'text-tictactoe-primary' : ''}
-          ${winner || (!actualIsMultiplayer && !isXNext) ? 'cursor-not-allowed' : 'hover:bg-muted'}
-          transition-colors duration-200`}
+        className={`flex items-center justify-center font-bold border-2 rounded-lg m-1
+          ${boxSize} ${textSize}
+          ${value === 'X' ? 'text-tictactoe-accent' : value === 'O' ? 'text-tictactoe-primary' : 'text-foreground'}
+          ${winner || (!actualIsMultiplayer && !isXNext) ? 'cursor-not-allowed bg-muted/50' : 'hover:bg-muted active:scale-95'}
+          transition-all duration-150 ease-in-out shadow-md hover:shadow-lg border-border
+          focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2`}
         disabled={!!winner || (!actualIsMultiplayer && !isXNext)}
+        aria-label={`Square ${index + 1}, ${value ? `Player ${value}` : 'Empty'}`}
       >
         {value}
       </button>
@@ -255,8 +284,16 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ p1Name, p2Name, isMultiplayerOver
   const renderStatus = () => {
     if (winner) {
       if (winner === 'draw') return "Game ended in a draw!";
-      const winnerName = winner === 'X' ? player1ActualName : player2ActualName;
-      return `Winner: ${winnerName}`;
+      // Use actual names for win message
+      const winnerDisplayName = winner === 'X' ? player1ActualName : player2ActualName;
+      
+      // Refined win messages based on game mode
+      if (!actualIsMultiplayer) { // Single player
+        return winner === 'X' ? "You Won!" : "AI Won";
+      }
+      // Multiplayer
+      return `Winner: ${winnerDisplayName}`;
+
     } else {
       const nextPlayerName = isXNext ? player1ActualName : player2ActualName;
       return `Next player: ${nextPlayerName} (${isXNext ? 'X' : 'O'})`;
@@ -269,23 +306,27 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ p1Name, p2Name, isMultiplayerOver
   }, [contextDifficulty, actualIsMultiplayer]); // Use actualIsMultiplayer and contextDifficulty
   
   return (
-    <div className="flex flex-col h-full p-4">
-      <div className="text-xl font-bold mb-4 flex justify-between items-center">
-        <span>{renderStatus()}</span>
-        <Button onClick={resetGame}>New Game</Button>
+    <div className="flex flex-col h-full p-2 sm:p-4 bg-background items-center justify-center">
+      <div className="w-full max-w-md text-center mb-4">
+        <h2 className="text-xl md:text-2xl font-bold mb-2">{renderStatus()}</h2>
+        <Button onClick={resetGame} className="w-full sm:w-auto">New Game</Button>
       </div>
       
-      <div className="flex-grow flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="grid grid-cols-3 gap-1 p-2">
-            {board.map((_, index) => (
-              <div key={index}>{renderSquare(index)}</div>
-            ))}
-          </CardContent>
-        </Card>
+      <Card className="w-full max-w-xs sm:max-w-sm md:max-w-md shadow-xl border-border">
+        <CardContent className="grid grid-cols-3 gap-1 p-2 bg-card rounded-lg">
+          {board.map((_, index) => (
+            <div key={index}>{renderSquare(index)}</div>
+          ))}
+        </CardContent>
+      </Card>
+      <div className="mt-6 text-sm text-muted-foreground text-center">
+        Player X: {player1ActualName} | Player O: {player2ActualName}
       </div>
+       {/* Footer space */}
+      <div className="h-12 flex-shrink-0"></div>
     </div>
   );
 };
 
 export default TicTacToe;
+

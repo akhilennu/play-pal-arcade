@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty, MemoryCard } from '@/types';
+import { getBoardConfig, generateNewBoard, calculateMemoryMatchScore } from './memorymatch/memoryMatchLogic';
 
 const MemoryMatch: React.FC = () => {
   const { state, dispatch } = useGameContext();
@@ -14,7 +14,7 @@ const MemoryMatch: React.FC = () => {
   // Game state
   const [cards, setCards] = useState<MemoryCard[]>([]);
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
-  const [matchedPairs, setMatchedPairs] = useState<number[]>([]);
+  const [matchedPairsValues, setMatchedPairsValues] = useState<number[]>([]); // Store matched values
   const [moves, setMoves] = useState(0);
   const [isChecking, setIsChecking] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
@@ -22,40 +22,15 @@ const MemoryMatch: React.FC = () => {
   const [endTime, setEndTime] = useState<Date | null>(null);
   
   // Determine board size based on difficulty
-  const getBoardConfig = () => {
-    switch (difficulty) {
-      case GameDifficulty.EASY:
-        return { rows: 3, cols: 4 }; // 12 cards, 6 pairs
-      case GameDifficulty.HARD:
-        return { rows: 4, cols: 6 }; // 24 cards, 12 pairs
-      case GameDifficulty.MEDIUM:
-      default:
-        return { rows: 4, cols: 4 }; // 16 cards, 8 pairs
-    }
-  };
-  
-  const { rows, cols } = getBoardConfig();
-  const totalPairs = (rows * cols) / 2;
+  const boardConfig = getBoardConfig(difficulty);
+  const { rows, cols, totalPairs } = boardConfig;
   
   // Initialize game
   const initializeGame = () => {
-    // Create pairs of cards
-    const cardValues = Array.from({ length: totalPairs }, (_, i) => i + 1);
-    // Create pairs
-    const cardPairs = [...cardValues, ...cardValues];
-    // Shuffle cards
-    const shuffledCards = cardPairs
-      .sort(() => Math.random() - 0.5)
-      .map((value, index) => ({
-        id: index,
-        value,
-        isFlipped: false,
-        isMatched: false,
-      }));
-    
-    setCards(shuffledCards);
+    const newCards = generateNewBoard(rows, cols);
+    setCards(newCards);
     setFlippedIndices([]);
-    setMatchedPairs([]);
+    setMatchedPairsValues([]);
     setMoves(0);
     setIsChecking(false);
     setGameFinished(false);
@@ -66,31 +41,16 @@ const MemoryMatch: React.FC = () => {
   // Initialize on mount and when difficulty changes
   useEffect(() => {
     initializeGame();
-  }, [difficulty]);
+  }, [difficulty, rows, cols]); // Depend on rows/cols in case boardConfig changes more dynamically
   
   // Check for game completion
   useEffect(() => {
-    if (matchedPairs.length === totalPairs && !gameFinished) {
+    if (matchedPairsValues.length === totalPairs && cards.length > 0 && !gameFinished) {
       const endTimeVal = new Date();
       setEndTime(endTimeVal);
       setGameFinished(true);
       
-      // Calculate score based on moves and difficulty
-      const timeElapsed = endTimeVal.getTime() - (startTime?.getTime() || 0);
-      const secondsElapsed = Math.floor(timeElapsed / 1000);
-      
-      let baseScore = 1000;
-      const difficultyMultiplier = 
-        difficulty === GameDifficulty.EASY ? 1 :
-        difficulty === GameDifficulty.MEDIUM ? 1.5 : 2;
-      
-      // Score formula: base score * difficulty - (moves penalty) - (time penalty)
-      const movesPenalty = moves * 10;
-      const timePenalty = secondsElapsed * 2;
-      const finalScore = Math.max(
-        Math.floor((baseScore * difficultyMultiplier) - movesPenalty - timePenalty), 
-        50
-      );
+      const finalScore = calculateMemoryMatchScore(moves, startTime, endTimeVal, difficulty);
       
       if (activeProfileId) {
         dispatch({
@@ -107,10 +67,10 @@ const MemoryMatch: React.FC = () => {
       
       toast({
         title: "Game Complete!",
-        description: `You completed the game in ${moves} moves and ${secondsElapsed} seconds. Score: ${finalScore}`,
+        description: `You completed the game in ${moves} moves and ${Math.floor((endTimeVal.getTime() - (startTime?.getTime() || 0)) / 1000)} seconds. Score: ${finalScore}`,
       });
     }
-  }, [matchedPairs, totalPairs, gameFinished, moves]);
+  }, [matchedPairsValues, totalPairs, cards, gameFinished, moves, startTime, difficulty, activeProfileId, dispatch]);
   
   // Handle card click
   const handleCardClick = (index: number) => {
@@ -125,8 +85,9 @@ const MemoryMatch: React.FC = () => {
     }
     
     // Flip the card
-    const newCards = [...cards];
-    newCards[index].isFlipped = true;
+    const newCards = cards.map((card, i) => 
+      i === index ? { ...card, isFlipped: true } : card
+    );
     setCards(newCards);
     
     const newFlippedIndices = [...flippedIndices, index];
@@ -139,24 +100,22 @@ const MemoryMatch: React.FC = () => {
       
       const [firstIndex, secondIndex] = newFlippedIndices;
       
-      if (cards[firstIndex].value === cards[secondIndex].value) {
+      if (newCards[firstIndex].value === newCards[secondIndex].value) {
         // Match found
         setTimeout(() => {
-          const newCards = [...cards];
-          newCards[firstIndex].isMatched = true;
-          newCards[secondIndex].isMatched = true;
-          setCards(newCards);
-          setMatchedPairs([...matchedPairs, cards[firstIndex].value]);
+          setCards(prevCards => prevCards.map(card => 
+            card.value === newCards[firstIndex].value ? { ...card, isMatched: true, isFlipped: true } : card
+          ));
+          setMatchedPairsValues(prev => [...prev, newCards[firstIndex].value]);
           setFlippedIndices([]);
           setIsChecking(false);
         }, 500);
       } else {
         // No match, flip back
         setTimeout(() => {
-          const newCards = [...cards];
-          newCards[firstIndex].isFlipped = false;
-          newCards[secondIndex].isFlipped = false;
-          setCards(newCards);
+          setCards(prevCards => prevCards.map((card, i) => 
+            i === firstIndex || i === secondIndex ? { ...card, isFlipped: false } : card
+          ));
           setFlippedIndices([]);
           setIsChecking(false);
         }, 1000);
@@ -177,7 +136,7 @@ const MemoryMatch: React.FC = () => {
             className="grid gap-2" 
             style={{ 
               gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`
+              // gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` // Aspect square handles row height
             }}
           >
             {cards.map((card, index) => (
@@ -186,23 +145,20 @@ const MemoryMatch: React.FC = () => {
                 className={`
                   aspect-square flex items-center justify-center p-0 cursor-pointer
                   ${card.isFlipped || card.isMatched ? '' : 'bg-memory-primary hover:bg-memory-primary/90'}
-                  transition-transform duration-300 transform
-                  ${card.isFlipped || card.isMatched ? 'scale-100 rotate-y-180' : 'scale-95'}
+                  transition-all duration-300 transform-style-preserve-3d 
+                  ${card.isFlipped || card.isMatched ? 'rotate-y-180' : ''}
                 `}
                 onClick={() => handleCardClick(index)}
               >
-                {(card.isFlipped || card.isMatched) ? (
-                  <div className={`
-                    w-full h-full flex items-center justify-center text-3xl font-bold
+                <div className={`w-full h-full flex items-center justify-center text-3xl font-bold backface-hidden ${card.isFlipped || card.isMatched ? 'rotate-y-180' : ''}`}>
+                  ?
+                </div>
+                <div className={`
+                    w-full h-full flex items-center justify-center text-3xl font-bold absolute top-0 left-0 rotate-y-180 backface-hidden
                     ${card.isMatched ? 'bg-memory-accent/20' : 'bg-memory-secondary/30'}
                   `}>
                     {card.value}
                   </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white">
-                    ?
-                  </div>
-                )}
               </Card>
             ))}
           </div>

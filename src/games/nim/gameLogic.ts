@@ -1,4 +1,4 @@
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { GameDifficulty } from '@/types';
 import { SoundType } from '@/hooks/use-sound-effects';
 import { getAIMove } from './qlearning';
@@ -18,7 +18,7 @@ export const generateRandomPiles = (): number[] => {
 // Initialize or reset game
 export const initializeGame = () => {
   return {
-    piles: generateRandomPiles(), // Use the new random pile generator
+    piles: generateRandomPiles(),
     currentPlayer: 1 as 1 | 2,
     selectedPile: null as number | null,
     selectedCount: 0,
@@ -44,11 +44,11 @@ export const calculateAIMove = (piles: number[], difficulty: GameDifficulty) => 
     .map((count, index) => ({ count, index }))
     .filter(pile => pile.count > 0);
   
-  if (nonEmptyPileIndices.length === 0) return null;
+  if (nonEmptyPileIndices.length === 0) return { pileIndex: -1, count: 0 }; // Ensure a return object
   
   // Choose random pile and random count
   const chosenPile = nonEmptyPileIndices[Math.floor(Math.random() * nonEmptyPileIndices.length)];
-  const chosenCount = Math.max(1, Math.floor(Math.random() * chosenPile.count));
+  const chosenCount = Math.max(1, Math.floor(Math.random() * chosenPile.count) +1); // ensure at least 1
   
   return { pileIndex: chosenPile.index, count: chosenCount };
 };
@@ -62,7 +62,7 @@ export const removeStones = (
   activeProfileId: string | null,
   isMultiplayer: boolean,
   difficulty: GameDifficulty,
-  dispatch: any,
+  dispatch: any, // Consider typing dispatch more strictly if possible
   playSound: (type: SoundType) => void
 ) => {
   // Update piles
@@ -80,29 +80,47 @@ export const removeStones = (
   if (remainingStones === 0) {
     gameOver = true;
     // Set winner to the player who DIDN'T make the last move
-    winner = currentPlayer === 1 ? 2 : 1;
+    winner = currentPlayer === 1 ? 2 : 1; // The current player made the last move, so the other player wins
     
-    // Play appropriate sound
-    playSound(currentPlayer === 1 ? SoundType.LOSE : SoundType.WIN);
-    
-    // Record score if player wins against AI
-    if (activeProfileId && !isMultiplayer && winner === 1) {
-      dispatch({
-        type: 'ADD_SCORE',
-        payload: {
-          userId: activeProfileId,
-          gameId: 'nim',
-          score: 1, // Win = 1 point
-          difficulty: difficulty,
-          date: new Date(),
-        },
-      });
-    }
-    
+    // Toast is a side effect, ideally handled by the component.
+    // For now, keeping it here to maintain functionality during this refactor stage.
+    // A future refactor could involve this function returning a game outcome object,
+    // and the component would then call toast.
     toast({
       title: "Game Over!",
-      description: `Player ${winner} wins!`,
+      description: `Player ${winner} wins!`, // This assumes Player 1 and Player 2 are the display names.
+                                           // For more accurate naming (e.g., "AI wins"), this toast
+                                           // might need to be triggered from NimGame.tsx where player names are known.
     });
+    
+    playSound(winner === 1 && !isMultiplayer ? SoundType.WIN : SoundType.LOSE); // If P1 (human) wins vs AI, WIN sound. Otherwise LOSE.
+                                                                         // Or more generally, if current user is the winner.
+
+    if (activeProfileId && winner === 1 && !isMultiplayer) { // Score if Player 1 (human) wins against AI
+        dispatch({
+          type: 'ADD_SCORE',
+          payload: {
+            userId: activeProfileId,
+            gameId: 'nim',
+            score: 1, // Win = 1 point
+            difficulty: difficulty,
+            date: new Date(),
+          },
+        });
+    } else if (activeProfileId && isMultiplayer && winner === 1) { // Score if Player 1 (human) wins in multiplayer
+        // Assuming player 1 is the active user in multiplayer for scoring purposes
+        // This might need more sophisticated logic if any player can be the active user.
+         dispatch({
+          type: 'ADD_SCORE',
+          payload: {
+            userId: activeProfileId,
+            gameId: 'nim',
+            score: 1, 
+            difficulty: difficulty,
+            date: new Date(),
+          },
+        });
+    }
   }
   
   // Switch player

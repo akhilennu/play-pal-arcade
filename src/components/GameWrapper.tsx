@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
@@ -9,13 +9,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import NavBar from '@/components/NavBar';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Settings as SettingsIcon } from 'lucide-react';
 import { getGameById } from '@/data/gamesData';
 import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty } from '@/types';
-import GameLoading from './GameLoading';
+import GameLoader from './GameLoader';
+import HowToPlayContentProvider from './HowToPlayContentProvider';
 import {
   Dialog,
   DialogContent,
@@ -24,19 +25,6 @@ import {
 import GameSettingsModal from './GameSettingsModal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-// Lazy load games - FIXED: Using correct dynamic imports
-const TicTacToe = lazy(() => import('@/games/TicTacToe'));
-const MemoryMatch = lazy(() => import('@/games/MemoryMatch'));
-const Game2048 = lazy(() => import('@/games/Game2048'));
-const NimGame = lazy(() => import('@/games/NimGame'));
-const ComingSoon = lazy(() => import('@/components/ComingSoon'));
-
-// Import instruction components
-const GameInstructionsNim = lazy(() => import('@/games/nim/GameInstructions'));
-const GameInstructionsTicTacToe = lazy(() => import('@/games/tictactoe/GameInstructions'));
-const GameInstructionsMemoryMatch = lazy(() => import('@/games/memorymatch/GameInstructions'));
-const GameInstructions2048 = lazy(() => import('@/games/game2048/GameInstructions'));
 
 // Key for Player 2's preferred name in local storage
 const PREFERRED_PLAYER2_NAME_KEY = 'playPalArcade_preferredPlayer2Name';
@@ -52,46 +40,6 @@ const safeLocalStorageGet = (key: string): string | null => {
   } catch (e) {
     console.warn("localStorage access denied or unavailable.", e);
     return null;
-  }
-};
-const GameLoader: React.FC<{ gameId: string; player1Name?: string; player2Name?: string; isMultiplayer?: boolean }> = ({ gameId, player1Name, player2Name, isMultiplayer }) => {
-  const gameData = getGameById(gameId);
-  
-  // Pass names to games that might use them for multiplayer display
-  switch (gameId) {
-    case 'tictactoe':
-      return <TicTacToe p1Name={player1Name} p2Name={player2Name} isMultiplayerOverride={isMultiplayer} />;
-    case 'memorymatch':
-      return <MemoryMatch />; // Assuming MemoryMatch doesn't use these names yet
-    case 'game2048':
-      return <Game2048 />; // Assuming 2048 doesn't use these names yet
-    case 'nim':
-      return <NimGame p1Name={player1Name} p2Name={player2Name} isMultiplayerOverride={isMultiplayer} />;
-    case 'hangman':
-    case 'connectfour':
-    case 'sudoku':
-      return <ComingSoon />;
-    default:
-      return <ComingSoon />;
-  }
-};
-
-const HowToPlayContentProvider: React.FC<{ gameId: string }> = ({ gameId }) => {
-  switch (gameId) {
-    case 'nim':
-      return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructionsNim /></Suspense>;
-    case 'tictactoe':
-      return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructionsTicTacToe /></Suspense>;
-    case 'memorymatch':
-      return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructionsMemoryMatch /></Suspense>;
-    case 'game2048':
-      return <Suspense fallback={<div>Loading instructions...</div>}><GameInstructions2048 /></Suspense>;
-    case 'hangman': // Placeholder for Hangman
-      return <p className="italic text-muted-foreground">Detailed instructions for Hangman are coming soon!</p>;
-    case 'connectfour': // Placeholder for Connect Four
-      return <p className="italic text-muted-foreground">Detailed instructions for Connect Four are coming soon!</p>;
-    default:
-      return <p className="italic text-muted-foreground">Detailed instructions for this game are coming soon!</p>;
   }
 };
 
@@ -186,6 +134,12 @@ const GameWrapper: React.FC = () => {
   const handleMultiplayerChange = (newMultiplayer: boolean) => {
     setIsMultiplayer(newMultiplayer);
     dispatch({ type: 'SET_MULTIPLAYER', payload: newMultiplayer });
+    // If switching to single player, P2 name might not be relevant for input
+    // If switching to multiplayer, ensure P2 name is loaded or defaulted
+    if (newMultiplayer && game?.supportsMultiplayer) {
+        const storedP2Name = safeLocalStorageGet(PREFERRED_PLAYER2_NAME_KEY);
+        setPlayer2Name(storedP2Name || "Player 2");
+    }
   };
   
   return (
@@ -218,7 +172,7 @@ const GameWrapper: React.FC = () => {
                 onDifficultyChange={handleDifficultyChange}
                 onMultiplayerChange={handleMultiplayerChange}
                 onSoundToggle={toggleSound}
-                howToPlayContent={<HowToPlayContentProvider gameId={game.id} />}
+                howToPlayContent={gameId ? <HowToPlayContentProvider gameId={gameId} /> : null}
                 player1Name={player1Name}
                 onPlayer1NameChange={setPlayer1Name}
                 player2Name={player2Name}
@@ -233,9 +187,7 @@ const GameWrapper: React.FC = () => {
             - flex flex-col: Lays out its children (the game) vertically.
             - min-h-0: Crucial for allowing this Card to shrink below its content's intrinsic height. This prevents the game (which might be h-full) from pushing the Card and subsequently the 'main' element to be too tall, thus avoiding page scrollbars. */}
         <Card className="p-0 overflow-hidden flex-grow flex flex-col min-h-0 max-h-fit"> 
-          <Suspense fallback={<GameLoading />}>
-            {gameId && <GameLoader gameId={gameId} player1Name={player1Name} player2Name={player2Name} isMultiplayer={isMultiplayer} />}
-          </Suspense>
+          {gameId && <GameLoader gameId={gameId} player1Name={player1Name} player2Name={player2Name} isMultiplayer={isMultiplayer} />}
         </Card>
       </main>
     </div>

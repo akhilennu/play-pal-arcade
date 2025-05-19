@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { useGameContext } from '@/contexts/GameContext';
 import { GameDifficulty } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { HelpCircle } from 'lucide-react';
+import {
+  initializeBoard2048,
+  addRandomTileToBoard2048,
+  isGameOver2048,
+  performMove2048,
+  Board2048 as GameBoardType,
+  MoveDirection
+} from './game2048/game2048Logic';
 
 const Game2048: React.FC = () => {
   const { state: gameContextState, dispatch } = useGameContext();
@@ -13,174 +21,83 @@ const Game2048: React.FC = () => {
   const isMobile = useIsMobile();
   
   // Game state
-  const [board, setBoard] = useState<number[][]>(Array(4).fill(0).map(() => Array(4).fill(0)));
+  const [board, setBoard] = useState<GameBoardType>(initializeBoard2048());
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
   
   // Initialize game
-  const initializeGame = useCallback(() => {
-    const newBoard = Array(4).fill(0).map(() => Array(4).fill(0));
-    addRandomTile(newBoard);
-    addRandomTile(newBoard);
-    setBoard(newBoard);
+  const resetGame = useCallback(() => {
+    setBoard(initializeBoard2048());
     setScore(0);
     setGameOver(false);
   }, []);
   
-  // Load best score from localStorage & initialize
   useEffect(() => {
     const savedBestScore = localStorage.getItem('game2048BestScore');
     if (savedBestScore) {
       setBestScore(parseInt(savedBestScore, 10));
     }
-    initializeGame();
-  }, [initializeGame]);
+    resetGame(); // Initialize game on mount
+  }, [resetGame]);
   
   // Save best score
   useEffect(() => {
     localStorage.setItem('game2048BestScore', bestScore.toString());
   }, [bestScore]);
 
-  
-  // Add a new random tile to the board
-  const addRandomTile = (currentBoard: number[][]) => {
-    const emptyCells: [number, number][] = [];
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        if (currentBoard[i][j] === 0) {
-          emptyCells.push([i, j]);
-        }
-      }
-    }
-    if (emptyCells.length > 0) {
-      const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-      currentBoard[row][col] = Math.random() < 0.9 ? 2 : 4;
-      return true;
-    }
-    return false;
-  };
-  
-  // Check if the game is over
-  const checkGameOver = (currentBoard: number[][]) => {
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 4; j++) {
-        if (currentBoard[i][j] === 0) return false;
-      }
-    }
-    for (let i = 0; i < 4; i++) {
-      for (let j = 0; j < 3; j++) {
-        if (currentBoard[i][j] === currentBoard[i][j + 1]) return false;
-      }
-    }
-    for (let j = 0; j < 4; j++) {
-      for (let i = 0; i < 3; i++) {
-        if (currentBoard[i][j] === currentBoard[i + 1][j]) return false;
-      }
-    }
-    return true;
-  };
-  
-  // Move tiles in different directions
-  const moveLeft = (currentBoard: number[][], currentScore: number) => {
-    let changed = false;
-    const newBoard = currentBoard.map(row => [...row]);
-    let newScore = currentScore;
-    
-    for (let i = 0; i < 4; i++) {
-      const compactedRow = newBoard[i].filter(tile => tile !== 0);
-      const mergedRow: number[] = [];
-      let tileIndex = 0;
-      while(tileIndex < compactedRow.length) {
-        if (tileIndex + 1 < compactedRow.length && compactedRow[tileIndex] === compactedRow[tileIndex+1]) {
-          const mergedValue = compactedRow[tileIndex] * 2;
-          mergedRow.push(mergedValue);
-          newScore += mergedValue;
-          changed = true;
-          tileIndex += 2;
-        } else {
-          mergedRow.push(compactedRow[tileIndex]);
-          tileIndex += 1;
-        }
-      }
-      while(mergedRow.length < 4) {
-        mergedRow.push(0);
-      }
-      if (!newBoard[i].every((val, index) => val === mergedRow[index])) {
-        changed = true;
-      }
-      newBoard[i] = mergedRow;
-    }
-    return { newBoard, newScore, changed };
-  };
-  
-  const moveRight = (currentBoard: number[][], currentScore: number) => {
-    let changed = false;
-    const newBoard = currentBoard.map(row => [...row]);
-    let newScore = currentScore;
-    for (let i = 0; i < 4; i++) {
-      const compactedRow = newBoard[i].filter(tile => tile !== 0).reverse();
-      const mergedRow: number[] = [];
-      let tileIndex = 0;
-      while(tileIndex < compactedRow.length) {
-        if (tileIndex + 1 < compactedRow.length && compactedRow[tileIndex] === compactedRow[tileIndex+1]) {
-          const mergedValue = compactedRow[tileIndex] * 2;
-          mergedRow.push(mergedValue);
-          newScore += mergedValue;
-          changed = true;
-          tileIndex += 2;
-        } else {
-          mergedRow.push(compactedRow[tileIndex]);
-          tileIndex += 1;
-        }
-      }
-      const finalRow = mergedRow.reverse();
-      while(finalRow.length < 4) {
-        finalRow.unshift(0);
-      }
-      if (!newBoard[i].every((val, index) => val === finalRow[index])) {
-        changed = true;
-      }
-      newBoard[i] = finalRow;
-    }
-    return { newBoard, newScore, changed };
-  };
-  
-  const moveUp = (currentBoard: number[][], currentScore: number) => {
-    const transposedBoard = transpose(currentBoard);
-    const { newBoard: movedTransposedBoard, newScore, changed } = moveLeft(transposedBoard, currentScore);
-    return { newBoard: transpose(movedTransposedBoard), newScore, changed };
-  };
-  
-  const moveDown = (currentBoard: number[][], currentScore: number) => {
-    const transposedBoard = transpose(currentBoard);
-    const { newBoard: movedTransposedBoard, newScore, changed } = moveRight(transposedBoard, currentScore);
-    return { newBoard: transpose(movedTransposedBoard), newScore, changed };
-  };
-  
-  // Transpose function for vertical moves
-  const transpose = (matrix: number[][]) => {
-    return matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
-  };
-  
-  // Handle keyboard input
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (gameOver) return;
-    let result;
-    switch (e.key) {
-      case 'ArrowLeft': result = moveLeft(board, score); break;
-      case 'ArrowRight': result = moveRight(board, score); break;
-      case 'ArrowUp': result = moveUp(board, score); break;
-      case 'ArrowDown': result = moveDown(board, score); break;
-      default: return;
-    }
-    e.preventDefault();
-    if (result) processMoveResult(result);
-  }, [gameOver, board, score, bestScore, activeProfileId, dispatch]);
-  
+  const processMove = (newBoard: GameBoardType, scoreDelta: number, changed: boolean) => {
+    if (!changed) return;
 
-  // Add and remove keyboard event listener
+    setBoard(newBoard);
+    const newCurrentScore = score + scoreDelta;
+    setScore(newCurrentScore);
+
+    if (newCurrentScore > bestScore) {
+      setBestScore(newCurrentScore);
+    }
+
+    const boardAfterAddingTile = newBoard.map(row => [...row]);
+    addRandomTileToBoard2048(boardAfterAddingTile); // Modifies in place
+    setBoard(boardAfterAddingTile);
+
+    if (isGameOver2048(boardAfterAddingTile)) {
+      setGameOver(true);
+      if (activeProfileId) {
+        dispatch({
+          type: 'ADD_SCORE',
+          payload: {
+            userId: activeProfileId,
+            gameId: 'game2048',
+            score: newCurrentScore, // Use the latest score
+            difficulty: GameDifficulty.EASY, // 2048 might not have difficulty settings in this version
+            date: new Date(),
+          },
+        });
+        toast({
+          title: "Game Over",
+          description: `Your final score: ${newCurrentScore}`,
+        });
+      }
+    }
+  };
+  
+  const handleKeyPress = useCallback((key: MoveDirection) => {
+    if (gameOver) return;
+    const { newBoard, scoreDelta, changed } = performMove2048(board, key);
+    processMove(newBoard, scoreDelta, changed);
+  }, [board, score, gameOver, bestScore, activeProfileId, dispatch]);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Type assertion for key compatibility with MoveDirection
+    const key = e.key as MoveDirection;
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(key)) {
+        e.preventDefault();
+        handleKeyPress(key);
+    }
+  }, [handleKeyPress]);
+  
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -188,14 +105,10 @@ const Game2048: React.FC = () => {
     };
   }, [handleKeyDown]); // Re-attach if handleKeyDown changes (due to its dependencies)
 
-  // Handle touch events for mobile swipe
   const handleTouchStart = (e: React.TouchEvent) => {
     if (gameOver) return;
     const touch = e.touches[0];
-    setTouchStart({
-      x: touch.clientX,
-      y: touch.clientY
-    });
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
   };
   
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -204,70 +117,22 @@ const Game2048: React.FC = () => {
     const touch = e.changedTouches[0];
     const deltaX = touch.clientX - touchStart.x;
     const deltaY = touch.clientY - touchStart.y;
-    
-    // Determine direction of swipe based on which delta is larger
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      // Horizontal swipe
-      if (deltaX > 30) { // Check positive deltaX for right swipe
-        // Right swipe
-        const result = moveRight(board, score);
-        processMoveResult(result);
-      } else if (deltaX < -30) { // Check negative deltaX for left swipe
-        // Left swipe
-        const result = moveLeft(board, score);
-        processMoveResult(result);
-      }
-    } else {
-      // Vertical swipe
-      if (deltaY > 30) { // Check positive deltaY for down swipe
-        // Down swipe
-        const result = moveDown(board, score);
-        processMoveResult(result);
-      } else if (deltaY < -30) { // Check negative deltaY for up swipe
-        // Up swipe
-        const result = moveUp(board, score);
-        processMoveResult(result);
-      }
+    let direction: MoveDirection | null = null;
+
+    const minSwipeDistance = 30; // Minimum distance for a swipe to be registered
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) { // Horizontal swipe
+      if (deltaX > minSwipeDistance) direction = 'ArrowRight';
+      else if (deltaX < -minSwipeDistance) direction = 'ArrowLeft';
+    } else { // Vertical swipe
+      if (deltaY > minSwipeDistance) direction = 'ArrowDown';
+      else if (deltaY < -minSwipeDistance) direction = 'ArrowUp';
     }
     
+    if (direction) {
+      handleKeyPress(direction);
+    }
     setTouchStart(null);
-  };
-  
-  // Process game move result
-  const processMoveResult = (result: { newBoard: number[][], newScore: number, changed: boolean }) => {
-    if (!result.changed) return;
-    
-    setBoard(result.newBoard);
-    setScore(result.newScore);
-    
-    if (result.newScore > bestScore) {
-      setBestScore(result.newScore);
-    }
-    
-    const boardWithNewTile = result.newBoard.map(row => [...row]);
-    const tileAdded = addRandomTile(boardWithNewTile);
-    
-    if (checkGameOver(boardWithNewTile)) {
-      setGameOver(true);
-      if (activeProfileId) {
-        dispatch({
-          type: 'ADD_SCORE',
-          payload: {
-            userId: activeProfileId,
-            gameId: 'game2048',
-            score: result.newScore,
-            difficulty: GameDifficulty.EASY,
-            date: new Date(),
-          },
-        });
-        toast({
-          title: "Game Over",
-          description: `Your final score: ${result.newScore}`,
-        });
-      }
-    }
-    
-    setBoard(boardWithNewTile);
   };
   
   // Get color for tile based on its value
@@ -305,6 +170,7 @@ const Game2048: React.FC = () => {
       className="flex flex-col h-full p-2 sm:p-4 overflow-hidden max-h-fit"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
+      // tabIndex={0} // Optional: makes the div focusable for key events if not window-bound
     >
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4 flex-shrink-0">
         <div className="flex gap-2 sm:gap-4 w-full sm:w-auto justify-around sm:justify-start">
@@ -317,7 +183,7 @@ const Game2048: React.FC = () => {
             <div className="text-lg sm:text-xl font-bold">{bestScore}</div>
           </div>
         </div>
-        <Button onClick={initializeGame} size="sm" variant="outline" className="w-full sm:w-auto mt-2 sm:mt-0">
+        <Button onClick={resetGame} size="sm" variant="outline" className="w-full sm:w-auto mt-2 sm:mt-0">
           Restart Game
         </Button>
       </div>
@@ -354,7 +220,7 @@ const Game2048: React.FC = () => {
         <div className="mt-4 p-4 bg-red-100 dark:bg-red-900/50 rounded-md text-center flex-shrink-0 shadow-md">
           <h3 className="text-lg font-semibold mb-2">Game Over!</h3>
           <p className="text-sm">Your Score: {score}</p>
-          <Button onClick={initializeGame} className="mt-2">Play Again</Button>
+          <Button onClick={resetGame} className="mt-2">Play Again</Button>
         </div>
       )}
     </div>
